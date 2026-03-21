@@ -1,0 +1,109 @@
+{
+  "name": "alert triage workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "codex/sentinel/alerts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a3bfff69-4f04-46d2-aae7-a0559f681f08",
+      "name": "MQTT Trigger",
+      "credentials": {
+        "mqtt": {
+          "id": "XitU2Rg76mRhTMJs",
+          "name": "MQTT account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const raw = item.json.message || item.json.payload || JSON.stringify(item.json);\n  let parsed;\n  try {\n    parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;\n  } catch (e) {\n    parsed = { raw_message: raw };\n  }\n  \n  const alertData = parsed.data || {};\n  const severity = (alertData.severity || 'low').toLowerCase();\n  const emoji = { critical: '🔴', high: '🟠', medium: '🟡', low: '🟢' }[severity] || '⚪';\n  \n  const discordMessage = emoji + ' SENTINEL ALERT ' + emoji\n    + '\\n\\nType: ' + (alertData.detection_type || 'UNKNOWN')\n    + '\\nSeverity: ' + severity.toUpperCase()\n    + '\\nSource: ' + (alertData.src_ip || '?') + ' → ' + (alertData.dst_ip || '?')\n    + '\\nMessage: ' + (alertData.message || '')\n    + '\\nTime: ' + (parsed.timestamp || '');\n\n  results.push({\n    json: {\n      discord_message: discordMessage,\n      detection_type: alertData.detection_type,\n      severity: severity,\n      src_ip: alertData.src_ip,\n      dst_ip: alertData.dst_ip,\n    }\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "f161e343-bd4c-4e0a-a79e-a31eb526d739",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1476897606444777555",
+          "mode": "list",
+          "cachedResultName": "AI-LAB",
+          "cachedResultUrl": "https://discord.com/channels/1476897606444777555"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1476897607396622370",
+          "mode": "list",
+          "cachedResultName": "general",
+          "cachedResultUrl": "https://discord.com/channels/1476897606444777555/1476897607396622370"
+        },
+        "content": "={{ $json.discord_message }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "a22d5965-5292-4686-b26a-4b88b4934abe",
+      "name": "Discord",
+      "credentials": {
+        "discordBotApi": {
+          "id": "7Fmm43Zw9b37I6L2",
+          "name": "Discord Bot account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "MQTT Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d3a3c21f-a3c1-478e-8d81-1ba7982c9cfe",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0e98c3658e8d7c94f54b52baed59345bbc45ba97c7d007794159f22d1bd3297b"
+  },
+  "id": "nlSa3BUtNnfL7a9A",
+  "tags": []
+}

@@ -24,6 +24,21 @@ CREATE INDEX IF NOT EXISTS idx_events_source ON events(source);
 CREATE INDEX IF NOT EXISTS idx_events_severity ON events(severity);
 CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
 
+-- Syswatch metrics (time-series data for Grafana panels)
+CREATE TABLE IF NOT EXISTS metrics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT NOT NULL,           -- ISO 8601
+    cpu_percent REAL DEFAULT 0,
+    mem_percent REAL DEFAULT 0,
+    mem_used_mb REAL DEFAULT 0,
+    disk_percent REAL DEFAULT 0,
+    net_rx_bytes_sec REAL DEFAULT 0,
+    net_tx_bytes_sec REAL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_metrics_timestamp ON metrics(timestamp);
+
 -- Threat intelligence (loaded from YAML by load_intel.py)
 CREATE TABLE IF NOT EXISTS threat_intel (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

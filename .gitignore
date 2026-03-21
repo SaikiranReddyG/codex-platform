@@ -1,6 +1,9 @@
 redis-data/
 n8n-data/
 grafana-data/
+mosquitto/data/
+mosquitto/log/
+logs/
 sqlite/codex.db
 *.pyc
 __pycache__/

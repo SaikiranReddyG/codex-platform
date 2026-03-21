@@ -30,13 +30,17 @@ codex-platform/
 ├── README.md
 ├── docker-compose.yml
 ├── grafana-dashboards/
+│   └── codex sec op-1774088358825.json
 ├── mosquitto/
 │   ├── config/
 │   ├── data/
 │   └── log/
 ├── n8n-workflows/
+│   └── alert_triage_workflow.json
 ├── scripts/
-│   └── load_intel.py
+│   ├── load_intel.py
+│   ├── metrics_receiver.py
+│   └── sweep.py
 ├── sqlite/
 │   └── schema.sql
 └── threat-intel/
@@ -79,10 +83,27 @@ sqlite3 sqlite/codex.db < sqlite/schema.sql
 python3 scripts/load_intel.py
 ```
 
-### 5. Access UIs
+### 5. Run the metrics receiver (optional, for syswatch feed)
+
+```bash
+python3 scripts/metrics_receiver.py
+```
+
+### 6. Sweep Redis alerts to SQLite (manual run)
+
+```bash
+python3 scripts/sweep.py
+```
+
+### 7. Access UIs
 
 - n8n: `http://localhost:5678`
 - Grafana: `http://localhost:3000` (default configured user/password in compose)
+
+## Imported Assets
+
+- Grafana dashboard export: `grafana-dashboards/codex sec op-1774088358825.json`
+- n8n alert workflow export: `n8n-workflows/alert_triage_workflow.json`
 
 ## Event Topics
 
@@ -106,6 +127,7 @@ Conventions:
 `sqlite/schema.sql` defines two core tables:
 
 - `events`: historical archived events (timestamp, source, severity, payload, enrichment flag)
+- `metrics`: syswatch time-series metrics used by Grafana panels
 - `threat_intel`: curated lookup data used to enrich detections
 
 `threat-intel/intel.yaml` is the source of truth for attack metadata and is loaded into SQLite by `scripts/load_intel.py`.
