@@ -1,0 +1,6 @@
+redis-data/
+n8n-data/
+grafana-data/
+sqlite/codex.db
+*.pyc
+__pycache__/

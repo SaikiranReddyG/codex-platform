@@ -1,0 +1,69 @@
+# ============================================================================
+# CODEX-PLATFORM Threat Intelligence
+# ============================================================================
+# Hand-curated lookup table for attack enrichment.
+# Loaded into SQLite by: python3 scripts/load_intel.py
+#
+# Add new entries as you build new attacks in netlab/breakbin.
+# ============================================================================
+
+attacks:
+  - attack_type: syn_flood
+    display_name: "SYN Flood Attack"
+    description: "TCP SYN flood designed to exhaust server connection table resources"
+    severity: high
+    cve_ids: ""
+    mitre_technique: ""
+    mitre_tactic: ""
+    response_action: alert
+    notes: "Detectable by sentinel via high SYN packet rate from single source"
+
+  - attack_type: arp_spoof
+    display_name: "ARP Spoofing / Cache Poisoning"
+    description: "Attacker sends forged ARP replies to associate their MAC with a victim's IP"
+    severity: high
+    cve_ids: ""
+    mitre_technique: ""
+    mitre_tactic: ""
+    response_action: alert
+    notes: "Precursor to MITM attacks. Detectable by sentinel via ARP anomaly detection"
+
+  - attack_type: dns_poisoning
+    display_name: "DNS Cache Poisoning"
+    description: "Attacker injects fraudulent DNS responses to redirect traffic"
+    severity: high
+    cve_ids: ""
+    mitre_technique: ""
+    mitre_tactic: ""
+    response_action: alert
+    notes: "Can redirect victim to malicious servers"
+
+  - attack_type: port_scan
+    display_name: "Network Port Scan"
+    description: "Reconnaissance activity probing for open ports on target hosts"
+    severity: medium
+    cve_ids: ""
+    mitre_technique: ""
+    mitre_tactic: ""
+    response_action: log
+    notes: "Often precedes more targeted attacks. Common with nmap"
+
+  - attack_type: buffer_overflow
+    display_name: "Buffer Overflow Exploit"
+    description: "Memory corruption attack overwriting stack/heap to gain code execution"
+    severity: critical
+    cve_ids: ""
+    mitre_technique: ""
+    mitre_tactic: ""
+    response_action: mitigate
+    notes: "Primary attack type in breakbin CTF challenges"
+
+  - attack_type: icmp_flood
+    display_name: "ICMP Flood (Ping Flood)"
+    description: "Denial of service via overwhelming volume of ICMP echo requests"
+    severity: medium
+    cve_ids: ""
+    mitre_technique: ""
+    mitre_tactic: ""
+    response_action: alert
+    notes: "Simple DoS, often used in initial testing"

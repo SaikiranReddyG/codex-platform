@@ -1,0 +1,105 @@
+# ============================================================================
+# CODEX-PLATFORM Docker Compose
+# ============================================================================
+# Start:   docker compose up -d
+# Stop:    docker compose down
+# Logs:    docker compose logs -f [service]
+# Status:  docker compose ps
+#
+# Pinned versions — do not change without testing all services together.
+# ============================================================================
+
+services:
+  # --- MQTT Broker ---
+  mosquitto:
+    image: eclipse-mosquitto:2.0.20
+    container_name: codex-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    networks:
+      - codex-net
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_pub -t 'test' -n -h localhost || exit 1"]
+
+  # --- Redis (hot event store) ---
+  redis:
+    image: redis:7.4-alpine
+    container_name: codex-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data
+    command: >
+      redis-server
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --bind 0.0.0.0
+    networks:
+      - codex-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # --- n8n (workflow orchestration) ---
+  n8n:
+    image: n8nio/n8n:1.76.1
+    container_name: codex-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - GENERIC_TIMEZONE=Europe/Paris
+      - TZ=Europe/Paris
+      # n8n stores workflows in SQLite by default in ~/.n8n
+    volumes:
+      - ./n8n-data:/home/node/.n8n
+      - ./sqlite:/home/node/sqlite
+
+    networks:
+      - codex-net
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # --- Grafana (dashboards) ---
+  grafana:
+    image: grafana/grafana-oss:11.4.0
+    container_name: codex-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=codex
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+      - ./sqlite:/var/lib/grafana/sqlite
+
+    networks:
+      - codex-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+networks:
+  codex-net:
+    driver: bridge
