@@ -1,0 +1,115 @@
+{
+  "name": "Red team trigger",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "red-team",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e320587c-1f2f-40ab-95a4-e3ba55598f0a",
+      "name": "Webhook",
+      "webhookId": "763477b0-d684-43e9-8e2a-0362864ac082"
+    },
+    {
+      "parameters": {
+        "command": "={{ 'cd /home/sai/codex-workspace/netlab && sudo /usr/bin/python3 /home/sai/codex-workspace/netlab/run_attack.py ' + ($json.query?.attack || 'syn_flood') }}"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "id": "8d22957a-5079-4c36-8dce-dda3c38a7431",
+      "name": "SSH",
+      "credentials": {
+        "sshPassword": {
+          "id": "Kf4bkm3xT7JUjUHd",
+          "name": "SSH Password account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'success', attack: $json.query?.attack || 'syn_flood', message: 'Attack triggered on Arch VM', stdout: $json.stdout || '', timestamp: new Date().toISOString() }) }}"
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        -60
+      ],
+      "id": "a1b2c3d4-success-resp-node-0001",
+      "name": "Success Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'error', message: 'SSH command failed — is Arch VM running?', error: $json.error?.message || 'Unknown error', timestamp: new Date().toISOString() }) }}",
+        "options": {
+          "responseCode": 502
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        100
+      ],
+      "id": "a1b2c3d4-error-resp-node-0002",
+      "name": "Error Response"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "SSH",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "74a580d7-2efb-4e94-8a9b-6d460109a6b5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0e98c3658e8d7c94f54b52baed59345bbc45ba97c7d007794159f22d1bd3297b"
+  },
+  "id": "SuLQxEGBJ7VL9UiR",
+  "tags": []
+}

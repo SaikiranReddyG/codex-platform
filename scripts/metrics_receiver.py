@@ -12,7 +12,7 @@ def on_message(client, userdata, msg):
     try:
         payload = json.loads(msg.payload.decode())
         data = payload.get('data', {})
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=5)
         conn.execute(
             'INSERT INTO metrics (timestamp, cpu_percent, mem_percent, mem_used_mb, disk_percent, net_rx_bytes_sec, net_tx_bytes_sec) VALUES (?, ?, ?, ?, ?, ?, ?)',
             (
