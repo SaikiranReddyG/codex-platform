@@ -8,7 +8,7 @@ import os
 PLATFORM_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(PLATFORM_DIR, "sqlite", "codex.db")
 
-r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+r = redis.Redis(host='localhost', port=6379, password='codex-redis-2026', decode_responses=True)
 conn = sqlite3.connect(DB_PATH, timeout=5)
 cursor = conn.cursor()
 

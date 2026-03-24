@@ -18,13 +18,13 @@ services:
     ports:
       - "1883:1883"
     volumes:
-      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
       - ./mosquitto/log:/mosquitto/log
     networks:
       - codex-net
     healthcheck:
-      test: ["CMD-SHELL", "mosquitto_pub -t 'test' -n -h localhost || exit 1"]
+      test: ["CMD-SHELL", "mosquitto_pub -t test -n -h localhost -u codex -P codex-mqtt-2026 || exit 1"]
 
   # --- Redis (hot event store) ---
   redis:
@@ -45,10 +45,11 @@ services:
       --maxmemory 256mb
       --maxmemory-policy allkeys-lru
       --bind 0.0.0.0
+      --requirepass codex-redis-2026
     networks:
       - codex-net
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "codex-redis-2026", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -88,7 +89,7 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=codex
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
     volumes:
       - ./grafana-data:/var/lib/grafana

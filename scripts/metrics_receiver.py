@@ -33,6 +33,7 @@ def on_message(client, userdata, msg):
 def main():
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     client.on_message = on_message
+    client.username_pw_set('codex', 'codex-mqtt-2026')
     client.connect('localhost', 1883)
     client.subscribe('codex/syswatch/metrics')
     print('[metrics_receiver] Listening for syswatch metrics. Ctrl+C to stop.')
