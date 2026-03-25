@@ -3,6 +3,7 @@ n8n-data/
 grafana-data/
 mosquitto/data/
 mosquitto/log/
+mosquitto/config/passwd
 logs/
 sqlite/codex.db
 *.pyc
