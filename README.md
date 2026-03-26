@@ -28,7 +28,14 @@ Full design details and rationale are in `ARCHITECTURE.md`.
 codex-platform/
 ├── ARCHITECTURE.md
 ├── README.md
+├── codex_bus.py
+├── syswatch_wrapper.py
+├── demo-start.sh
+├── demo-stop.sh
+├── healthcheck.sh
 ├── docker-compose.yml
+├── soc-command-center-v2.json
+├── topology-panel-v2.html
 ├── grafana-dashboards/
 │   └── codex sec op-1774088358825.json
 ├── mosquitto/
@@ -36,7 +43,8 @@ codex-platform/
 │   ├── data/
 │   └── log/
 ├── n8n-workflows/
-│   └── alert_triage_workflow.json
+│   ├── alert_triage_workflow.json
+│   └── red-team-trigger-v2.json
 ├── scripts/
 │   ├── load_intel.py
 │   ├── metrics_receiver.py
@@ -103,7 +111,10 @@ python3 scripts/sweep.py
 ## Imported Assets
 
 - Grafana dashboard export: `grafana-dashboards/codex sec op-1774088358825.json`
+- Grafana dashboard (SOC v2): `soc-command-center-v2.json`
+- Grafana HTML topology panel snippet: `topology-panel-v2.html`
 - n8n alert workflow export: `n8n-workflows/alert_triage_workflow.json`
+- n8n red-team trigger workflow export: `n8n-workflows/red-team-trigger-v2.json`
 
 ## Event Topics
 
