@@ -19,6 +19,11 @@ GRAFANA_PORT=3000
 SQLITE_DB="$HOME/codex-workspace/codex-platform/sqlite/codex.db"
 COMPOSE_DIR="$HOME/codex-workspace/codex-platform"
 
+# Auth (must match docker-compose.yml)
+MQTT_USER="codex"
+MQTT_PASS="codex-mqtt-2026"
+REDIS_PASS="codex-redis-2026"
+
 # ─── Colors ───
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -105,10 +110,10 @@ fi
 if command -v mosquitto_pub &>/dev/null && command -v mosquitto_sub &>/dev/null; then
   TEST_MSG="healthcheck-$(date +%s)"
   # Subscribe in background, wait for message, timeout after 3s
-  timeout 3 mosquitto_sub -h localhost -p $MQTT_PORT -t "codex/healthcheck" -C 1 > /tmp/mqtt_test 2>/dev/null &
+  timeout 3 mosquitto_sub -h localhost -p $MQTT_PORT -u "$MQTT_USER" -P "$MQTT_PASS" -t "codex/healthcheck" -C 1 > /tmp/mqtt_test 2>/dev/null &
   SUB_PID=$!
   sleep 0.5
-  mosquitto_pub -h localhost -p $MQTT_PORT -t "codex/healthcheck" -m "$TEST_MSG" 2>/dev/null
+  mosquitto_pub -h localhost -p $MQTT_PORT -u "$MQTT_USER" -P "$MQTT_PASS" -t "codex/healthcheck" -m "$TEST_MSG" 2>/dev/null
   wait $SUB_PID 2>/dev/null
   RECEIVED=$(cat /tmp/mqtt_test 2>/dev/null)
   if [ "$RECEIVED" = "$TEST_MSG" ]; then
@@ -142,7 +147,7 @@ else
 fi
 
 # Ping Redis
-REDIS_PING=$(docker exec codex-redis redis-cli PING 2>/dev/null)
+REDIS_PING=$(docker exec -e REDISCLI_AUTH="$REDIS_PASS" codex-redis redis-cli PING 2>/dev/null | tr -d '\r')
 if [ "$REDIS_PING" = "PONG" ]; then
   pass "Redis PING → PONG"
 else
@@ -151,7 +156,7 @@ fi
 
 # Check streams exist and get counts
 for stream in "stream:codex/sentinel/alerts" "stream:codex/netlab/attacks" "stream:codex/syswatch/metrics"; do
-  LEN=$(docker exec codex-redis redis-cli XLEN "$stream" 2>/dev/null)
+  LEN=$(docker exec -e REDISCLI_AUTH="$REDIS_PASS" codex-redis redis-cli XLEN "$stream" 2>/dev/null | tr -d '\r')
   if [ -n "$LEN" ] && [ "$LEN" -gt 0 ] 2>/dev/null; then
     pass "$stream — $LEN entries"
   elif [ "$LEN" = "0" ]; then
@@ -162,7 +167,7 @@ for stream in "stream:codex/sentinel/alerts" "stream:codex/netlab/attacks" "stre
 done
 
 # Check Redis memory
-REDIS_MEM=$(docker exec codex-redis redis-cli INFO memory 2>/dev/null | grep "used_memory_human" | cut -d: -f2 | tr -d '\r')
+REDIS_MEM=$(docker exec -e REDISCLI_AUTH="$REDIS_PASS" codex-redis redis-cli INFO memory 2>/dev/null | grep "used_memory_human" | cut -d: -f2 | tr -d '\r')
 if [ -n "$REDIS_MEM" ]; then
   info "Redis memory usage: $REDIS_MEM"
 fi

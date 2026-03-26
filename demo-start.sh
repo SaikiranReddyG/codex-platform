@@ -22,6 +22,19 @@ ARCH_USER="sai"
 MQTT_USER="codex"
 MQTT_PASS="codex-mqtt-2026"
 REDIS_PASS="codex-redis-2026"
+LOG_DIR="${COMPOSE_DIR}/logs"
+
+mkdir -p "$LOG_DIR"
+
+METRICS_RECEIVER_LOG="${LOG_DIR}/metrics_receiver.log"
+N8N_WF_API_FILE="${LOG_DIR}/codex_n8n_workflows_api.json"
+SELFTEST_TRIGGER_FILE="${LOG_DIR}/codex_selftest_trigger.json"
+SENTINEL_START_ERR_FILE="${LOG_DIR}/sentinel_start_err.txt"
+
+# Arch-side logs (written on the Arch VM)
+ARCH_LOG_DIR="/home/${ARCH_USER}/codex-workspace/codex-platform/logs"
+ARCH_SYSWATCH_LOG="${ARCH_LOG_DIR}/syswatch.log"
+ARCH_SENTINEL_STDOUT_LOG="${ARCH_LOG_DIR}/sentinel_stdout.log"
 
 SELF_TEST=0
 if [ "$1" = "--self-test" ]; then
@@ -179,7 +192,7 @@ pkill -f "metrics_receiver" 2>/dev/null
 sleep 1
 
 cd "$COMPOSE_DIR"
-nohup python3 scripts/metrics_receiver.py > /tmp/metrics_receiver.log 2>&1 &
+nohup python3 -u scripts/metrics_receiver.py > "$METRICS_RECEIVER_LOG" 2>&1 &
 MR_PID=$!
 sleep 2
 
@@ -187,7 +200,7 @@ if kill -0 $MR_PID 2>/dev/null; then
   ok "metrics_receiver.py running (PID $MR_PID)"
 else
   critical_fail "metrics_receiver.py failed to start"
-  warn "Check: cat /tmp/metrics_receiver.log"
+  warn "Check: tail -n 80 $METRICS_RECEIVER_LOG"
 fi
 
 # ─── Step 3: Check Arch VM ───
@@ -249,18 +262,20 @@ fi
 
 # Syswatch wrapper
 info "Starting syswatch_wrapper..."
-SW_PID=$(ssh "$ARCH_USER@$ARCH_IP" "bash -c 'pkill -f syswatch_wrapper 2>/dev/null; nohup python3 ~/codex-workspace/codex-platform/syswatch_wrapper.py > /tmp/syswatch.log 2>&1 & echo \$!'")
+SW_PID=$(ssh "$ARCH_USER@$ARCH_IP" "bash -c 'mkdir -p \"$ARCH_LOG_DIR\"; pkill -f syswatch_wrapper 2>/dev/null; nohup python3 -u ~/codex-workspace/codex-platform/syswatch_wrapper.py > \"$ARCH_SYSWATCH_LOG\" 2>&1 & echo \$!'")
 sleep 2
 if [ -n "$SW_PID" ] && ssh "$ARCH_USER@$ARCH_IP" "kill -0 $SW_PID 2>/dev/null" 2>/dev/null; then
   ok "syswatch_wrapper running (PID $SW_PID)"
+  info "Arch syswatch log: $ARCH_SYSWATCH_LOG"
 else
   info "syswatch_wrapper PID not confirmed; verifying via SQLite metrics"
+  info "Arch syswatch log: $ARCH_SYSWATCH_LOG"
 fi
 
 # Sentinel
 info "Starting sentinel on br-lab..."
 ARCH_SENT_IFACE=$(ssh "$ARCH_USER@$ARCH_IP" "ip link show br-lab >/dev/null 2>&1 && echo br-lab || echo eth0" 2>/dev/null || true)
-SENT_LOG="/home/${ARCH_USER}/codex-workspace/sentinel/logs/sentinel_stdout.log"
+SENT_LOG="$ARCH_SENTINEL_STDOUT_LOG"
 
 # Avoid pkill -f in a single SSH command: it can match and kill the SSH shell
 # command line itself when patterns overlap.
@@ -269,16 +284,17 @@ if [ -n "$OLD_SENT_PIDS" ]; then
   ssh "$ARCH_USER@$ARCH_IP" "sudo -n kill $OLD_SENT_PIDS 2>/dev/null || true" >/dev/null 2>&1
 fi
 
-SENT_PID=$(ssh "$ARCH_USER@$ARCH_IP" "cd ~/codex-workspace/sentinel && mkdir -p logs && rm -f logs/sentinel_stdout.log; nohup sudo -n python3 src/main.py -c config.yaml -i $ARCH_SENT_IFACE --no-dashboard > logs/sentinel_stdout.log 2>&1 < /dev/null & echo \$!" 2>/tmp/sentinel_start_err.txt | tr -d '[:space:]')
+SENT_PID=$(ssh "$ARCH_USER@$ARCH_IP" "cd ~/codex-workspace/sentinel && mkdir -p \"$ARCH_LOG_DIR\" && rm -f \"$SENT_LOG\"; nohup sudo -n python3 -u src/main.py -c config.yaml -i $ARCH_SENT_IFACE --no-dashboard > \"$SENT_LOG\" 2>&1 < /dev/null & echo \$!" 2>"$SENTINEL_START_ERR_FILE" | tr -d '[:space:]')
 sleep 3
 SENT_CMD=$(ssh "$ARCH_USER@$ARCH_IP" "ps -eo pid,args | grep -E 'python3 .*(sentinel/src/main.py|src/main.py)' | grep -v -E 'grep|pgrep' | head -n 1" 2>/dev/null || true)
 if [ -n "$SENT_CMD" ]; then
   ok "sentinel running (iface=$ARCH_SENT_IFACE)"
   info "sentinel proc: $SENT_CMD"
+  info "Arch sentinel stdout log: $SENT_LOG"
 else
   critical_fail "sentinel is not running after startup"
-  if [ -s /tmp/sentinel_start_err.txt ]; then
-    warn "startup stderr: $(tail -n 1 /tmp/sentinel_start_err.txt)"
+  if [ -s "$SENTINEL_START_ERR_FILE" ]; then
+    warn "startup stderr: $(tail -n 1 "$SENTINEL_START_ERR_FILE")"
   fi
   warn "Check on Arch: tail -n 80 $SENT_LOG"
 fi
@@ -308,7 +324,8 @@ else
     ok "SQLite receiving metrics ($RECENT_METRICS in last 5 min)"
   else
     critical_fail "No recent syswatch metrics in SQLite"
-    warn "Check /tmp/metrics_receiver.log and Arch: /tmp/syswatch.log"
+    warn "Check Pop!_OS: tail -n 80 $METRICS_RECEIVER_LOG"
+    warn "Check Arch: tail -n 80 $ARCH_SYSWATCH_LOG"
   fi
 fi
 
@@ -321,7 +338,6 @@ else
 fi
 
 # Verify runtime workflow state in n8n API (not just local JSON file).
-N8N_WF_API_FILE="/tmp/codex_n8n_workflows_api.json"
 N8N_WF_API_STATUS=$(curl -s -o "$N8N_WF_API_FILE" -w "%{http_code}" http://localhost:5678/api/v1/workflows 2>/dev/null || echo 000)
 
 if [ "$N8N_WF_API_STATUS" = "200" ]; then
@@ -379,7 +395,7 @@ fi
 if [ "$SELF_TEST" -eq 1 ]; then
   header "Self-test: Trigger and validate alerts"
   BEFORE_ALERT_COUNT=$(docker exec -e REDISCLI_AUTH="$REDIS_PASS" codex-redis redis-cli XLEN "stream:codex/sentinel/alerts" 2>/dev/null | tr -d '\r')
-  if ! curl -sS http://localhost:5678/webhook/red-team >/tmp/codex_selftest_trigger.json 2>/dev/null; then
+  if ! curl -sS http://localhost:5678/webhook/red-team >"$SELFTEST_TRIGGER_FILE" 2>/dev/null; then
     critical_fail "Self-test trigger failed (n8n webhook unreachable)"
   else
     ok "Self-test trigger submitted"
@@ -392,7 +408,7 @@ if [ "$SELF_TEST" -eq 1 ]; then
     ok "Self-test passed: alert stream incremented ($BEFORE_ALERT_COUNT -> $AFTER_ALERT_COUNT)"
   else
     critical_fail "Self-test failed: alert stream did not increment"
-    warn "Trigger response: $(cat /tmp/codex_selftest_trigger.json 2>/dev/null)"
+    warn "Trigger response: $(cat "$SELFTEST_TRIGGER_FILE" 2>/dev/null)"
   fi
 fi
 
