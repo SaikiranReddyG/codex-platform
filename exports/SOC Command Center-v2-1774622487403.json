@@ -1,0 +1,1279 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": 3,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 100,
+      "panels": [],
+      "title": "Status overview",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "cfgmnrokea0owa"
+      },
+      "description": "Distinct sources that have reported events",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#fc5c65",
+                "value": null
+              },
+              {
+                "color": "#f6ad55",
+                "value": 1
+              },
+              {
+                "color": "#38d9a9",
+                "value": 2
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "rawQueryText": "SELECT COUNT(DISTINCT source) as value FROM events WHERE created_at > datetime('now', '-7 days')",
+          "refId": "A"
+        }
+      ],
+      "title": "Active nodes",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "cfgmnrokea0owa"
+      },
+      "description": "Docker services on Pop!_OS",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#63b3ed",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "rawQueryText": "SELECT 4 as value",
+          "refId": "A"
+        }
+      ],
+      "title": "Containers",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "cfgmnrokea0owa"
+      },
+      "description": "Distinct MQTT topics seen in events",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#f6ad55",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "rawQueryText": "SELECT COUNT(DISTINCT mqtt_topic) as value FROM events",
+          "refId": "A"
+        }
+      ],
+      "title": "MQTT topics",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "cfgmnrokea0owa"
+      },
+      "description": "Total alerts in the last 24 hours",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#38d9a9",
+                "value": null
+              },
+              {
+                "color": "#f6ad55",
+                "value": 10
+              },
+              {
+                "color": "#fc5c65",
+                "value": 25
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "rawQueryText": "SELECT COUNT(*) as value FROM events WHERE event_type = 'alert' AND created_at > datetime('now', '-24 hours')",
+          "refId": "A"
+        }
+      ],
+      "title": "Alerts (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "cfgmnrokea0owa"
+      },
+      "description": "Critical severity alerts in last 24 hours",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#fc5c65",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "rawQueryText": "SELECT COUNT(*) as value FROM events WHERE severity = 'critical' AND created_at > datetime('now', '-24 hours')",
+          "refId": "A"
+        }
+      ],
+      "title": "Critical (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "cfgmnrokea0owa"
+      },
+      "description": "Time of most recent alert",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#b794f6",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "noValue": "No alerts yet",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "queryText": "SELECT MAX(timestamp) as time FROM events WHERE event_type = 'alert'",
+          "rawQueryText": "SELECT MAX(timestamp) as time FROM events WHERE event_type = 'alert'",
+          "refId": "A"
+        }
+      ],
+      "title": "Last alert",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "id": 101,
+      "panels": [],
+      "title": "Live feeds",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "redis-datasource",
+        "uid": "dfgmnnffldc74a"
+      },
+      "description": "Real-time alerts from Redis stream — shows last 50 entries. If empty, sentinel is not running or no alerts have been generated.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "inspect": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 14,
+        "x": 0,
+        "y": 6
+      },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "command": "xrange",
+          "count": 50,
+          "end": "+",
+          "keyName": "stream:codex/sentinel/alerts",
+          "refId": "A",
+          "start": "-",
+          "type": "redis"
+        }
+      ],
+      "title": "Live alert stream (Redis)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "cfgmnrokea0owa"
+      },
+      "description": "Distribution of alert severity levels across all time",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "critical"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#fc5c65",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "high"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#f6ad55",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "medium"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#63b3ed",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "low"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#38d9a9",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 5,
+        "x": 14,
+        "y": 6
+      },
+      "id": 11,
+      "options": {
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "/^count$/",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "queryText": "SELECT severity, COUNT(*) as count FROM events WHERE event_type = 'alert' GROUP BY severity ORDER BY CASE severity WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END",
+          "rawQueryText": "SELECT severity, COUNT(*) as count FROM events WHERE event_type = 'alert' GROUP BY severity ORDER BY CASE severity WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END",
+          "refId": "A"
+        }
+      ],
+      "title": "Alerts by severity",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "cfgmnrokea0owa"
+      },
+      "description": "Known attack signatures from intel.yaml",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false,
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "critical": {
+                        "text": "🔴 critical"
+                      },
+                      "high": {
+                        "text": "🟠 high"
+                      },
+                      "low": {
+                        "text": "🟢 low"
+                      },
+                      "medium": {
+                        "text": "🟡 medium"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "response_action"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "alert": {
+                        "text": "⚡ alert"
+                      },
+                      "log": {
+                        "text": "📝 log"
+                      },
+                      "mitigate": {
+                        "text": "🛡️ mitigate"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 5,
+        "x": 19,
+        "y": 6
+      },
+      "id": 12,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "rawQueryText": "SELECT attack_type, severity, response_action FROM threat_intel ORDER BY CASE severity WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END",
+          "refId": "A"
+        }
+      ],
+      "title": "Threat intelligence",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "redis-datasource",
+        "uid": "dfgmnnffldc74a"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 19,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 104,
+      "options": {
+        "SVGBaseFix": true,
+        "add100Percentage": true,
+        "calcsMutation": "standard",
+        "centerAlignContent": true,
+        "codeData": "{\n  \"text\": \"Random text\"\n}",
+        "css": "* {\n  font-family: Open Sans;\n}\n\n.box {\n  border: solid #555 2px;\n  border-radius: 10px;\n  padding: 10px 20px;\n}\n",
+        "dynamicData": false,
+        "dynamicFieldDisplayValues": false,
+        "dynamicHtmlGraphics": false,
+        "dynamicProps": false,
+        "html": "\n<style>\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  \n  :root {\n    --bg-surface: #111827;\n    --bg-card: #1a2235;\n    --border: rgba(99, 179, 237, 0.12);\n    --text-primary: #e8edf5;\n    --text-secondary: #8b95a8;\n    --text-muted: #5a6478;\n    --accent-blue: #63b3ed;\n    --accent-teal: #38d9a9;\n    --accent-amber: #f6ad55;\n    --accent-red: #fc5c65;\n    --accent-purple: #b794f6;\n  }\n  \n  .topo-wrap {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    flex-direction: column;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;\n    background: transparent;\n  }\n  \n  .topo-stats {\n    display: grid;\n    grid-template-columns: repeat(4, 1fr);\n    gap: 1px;\n    background: rgba(99,179,237,0.06);\n    border-bottom: 1px solid var(--border);\n    flex-shrink: 0;\n  }\n  \n  .topo-stat {\n    padding: 10px 12px;\n    background: var(--bg-surface);\n  }\n  \n  .topo-stat-label {\n    font-size: 9px;\n    color: var(--text-muted);\n    text-transform: uppercase;\n    letter-spacing: 0.08em;\n  }\n  \n  .topo-stat-value {\n    font-size: 20px;\n    font-weight: 600;\n    margin-top: 2px;\n  }\n  \n  .topo-stat-unit {\n    font-size: 10px;\n    font-weight: 400;\n    color: var(--text-muted);\n  }\n  \n  .topo-graph {\n    flex: 1;\n    padding: 16px;\n    min-height: 0;\n  }\n  \n  .topo-graph svg {\n    width: 100%;\n    height: 100%;\n  }\n  \n  .topo-flows {\n    border-top: 1px solid var(--border);\n    flex-shrink: 0;\n    overflow-x: auto;\n  }\n  \n  .flow-hdr, .flow-row {\n    display: grid;\n    grid-template-columns: 2.5fr 1.8fr 1.8fr 1fr 0.8fr;\n    padding: 6px 12px;\n    font-size: 10px;\n    white-space: nowrap;\n  }\n  \n  .flow-hdr {\n    color: var(--text-muted);\n    text-transform: uppercase;\n    letter-spacing: 0.06em;\n    background: rgba(99,179,237,0.04);\n    font-size: 9px;\n  }\n  \n  .flow-row {\n    border-top: 1px solid rgba(99,179,237,0.06);\n    color: var(--text-secondary);\n  }\n  \n  .flow-row:hover { background: rgba(99,179,237,0.04); }\n  .flow-topic { color: var(--accent-blue); }\n  .flow-rate { color: var(--accent-teal); }\n  \n  .flow-status {\n    display: flex;\n    align-items: center;\n    gap: 4px;\n  }\n  \n  .dot {\n    width: 5px;\n    height: 5px;\n    border-radius: 50%;\n    display: inline-block;\n  }\n  .dot-active { background: var(--accent-teal); }\n  .dot-standby { background: var(--accent-amber); }\n  \n  @keyframes nodeIn {\n    from { opacity: 0; transform: translateY(4px); }\n    to { opacity: 1; transform: translateY(0); }\n  }\n  .node-anim { animation: nodeIn 0.5s ease-out both; }\n</style>\n\n<div class=\"topo-wrap\">\n  \n  <!-- Stats bar -->\n  <div class=\"topo-stats\">\n    <div class=\"topo-stat\">\n      <div class=\"topo-stat-label\">Active nodes</div>\n      <div class=\"topo-stat-value\" style=\"color:var(--accent-teal)\">2 <span class=\"topo-stat-unit\">/ 2</span></div>\n    </div>\n    <div class=\"topo-stat\">\n      <div class=\"topo-stat-label\">Containers</div>\n      <div class=\"topo-stat-value\" style=\"color:var(--accent-blue)\">4 <span class=\"topo-stat-unit\">healthy</span></div>\n    </div>\n    <div class=\"topo-stat\">\n      <div class=\"topo-stat-label\">MQTT topics</div>\n      <div class=\"topo-stat-value\" style=\"color:var(--accent-amber)\">3 <span class=\"topo-stat-unit\">active</span></div>\n    </div>\n    <div class=\"topo-stat\">\n      <div class=\"topo-stat-label\">Alerts 24h</div>\n      <div class=\"topo-stat-value\" style=\"color:var(--accent-red)\">17</div>\n    </div>\n  </div>\n  \n  <!-- Topology graph -->\n  <div class=\"topo-graph\">\n    <svg viewBox=\"0 0 920 300\" xmlns=\"http://www.w3.org/2000/svg\">\n      <defs>\n        <marker id=\"arr\" viewBox=\"0 0 10 10\" refX=\"10\" refY=\"5\" markerWidth=\"6\" markerHeight=\"6\" orient=\"auto\">\n          <path d=\"M0 1L8 5L0 9\" fill=\"none\" stroke=\"context-stroke\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>\n        </marker>\n      </defs>\n      \n      <!-- Subtle grid -->\n      <pattern id=\"grid\" width=\"40\" height=\"40\" patternUnits=\"userSpaceOnUse\">\n        <circle cx=\"20\" cy=\"20\" r=\"0.5\" fill=\"rgba(99,179,237,0.06)\"/>\n      </pattern>\n      <rect width=\"920\" height=\"300\" fill=\"url(#grid)\"/>\n      \n      <!-- Zone labels -->\n      <text x=\"170\" y=\"18\" font-size=\"9\" fill=\"#5a6478\" text-anchor=\"middle\" letter-spacing=\"0.12em\" font-family=\"monospace\">SENSOR ZONE</text>\n      <line x1=\"70\" y1=\"24\" x2=\"270\" y2=\"24\" stroke=\"rgba(99,179,237,0.06)\" stroke-width=\"1\"/>\n      \n      <text x=\"470\" y=\"18\" font-size=\"9\" fill=\"#5a6478\" text-anchor=\"middle\" letter-spacing=\"0.12em\" font-family=\"monospace\">PROCESSING ZONE</text>\n      <line x1=\"340\" y1=\"24\" x2=\"600\" y2=\"24\" stroke=\"rgba(99,179,237,0.06)\" stroke-width=\"1\"/>\n      \n      <text x=\"780\" y=\"18\" font-size=\"9\" fill=\"#5a6478\" text-anchor=\"middle\" letter-spacing=\"0.12em\" font-family=\"monospace\">OUTPUT ZONE</text>\n      <line x1=\"700\" y1=\"24\" x2=\"860\" y2=\"24\" stroke=\"rgba(99,179,237,0.06)\" stroke-width=\"1\"/>\n      \n      <!-- ═══ CONNECTIONS ═══ -->\n      <path d=\"M260 80 L340 80\" fill=\"none\" stroke=\"#63b3ed\" stroke-width=\"1.5\" opacity=\"0.3\" marker-end=\"url(#arr)\"/>\n      <path d=\"M260 80 C300 80,310 170,340 170\" fill=\"none\" stroke=\"#fc5c65\" stroke-width=\"1\" opacity=\"0.2\" marker-end=\"url(#arr)\" stroke-dasharray=\"4 3\"/>\n      <path d=\"M260 170 C300 170,310 95,340 95\" fill=\"none\" stroke=\"#38d9a9\" stroke-width=\"1\" opacity=\"0.25\" marker-end=\"url(#arr)\"/>\n      <path d=\"M260 250 C310 250,320 105,340 105\" fill=\"none\" stroke=\"#f6ad55\" stroke-width=\"1\" opacity=\"0.15\" marker-end=\"url(#arr)\" stroke-dasharray=\"4 3\"/>\n      \n      <path d=\"M500 90 L540 90 L540 170 L580 170\" fill=\"none\" stroke=\"#63b3ed\" stroke-width=\"1.5\" opacity=\"0.3\" marker-end=\"url(#arr)\"/>\n      <path d=\"M500 175 L520 175 L520 250 L580 250\" fill=\"none\" stroke=\"#38d9a9\" stroke-width=\"1\" opacity=\"0.25\" marker-end=\"url(#arr)\"/>\n      \n      <path d=\"M735 170 L770 170 L770 95 L800 95\" fill=\"none\" stroke=\"#b794f6\" stroke-width=\"1\" opacity=\"0.3\" marker-end=\"url(#arr)\"/>\n      <path d=\"M735 250 L800 250\" fill=\"none\" stroke=\"#f6ad55\" stroke-width=\"1\" opacity=\"0.2\"/>\n      \n      <!-- ═══ NODES ═══ -->\n      \n      <!-- Sentinel -->\n      <g class=\"node-anim\" style=\"animation-delay:0.1s\">\n        <rect x=\"90\" y=\"42\" width=\"170\" height=\"75\" rx=\"8\" fill=\"#1a2235\" stroke=\"rgba(99,179,237,0.25)\" stroke-width=\"1\"/>\n        <circle cx=\"106\" cy=\"60\" r=\"4\" fill=\"#38d9a9\"/>\n        <text x=\"118\" y=\"64\" font-size=\"11\" font-weight=\"600\" fill=\"#e8edf5\" font-family=\"monospace\">sentinel</text>\n        <text x=\"106\" y=\"82\" font-size=\"9\" fill=\"#5a6478\" font-family=\"monospace\">IDS · br-lab</text>\n        <text x=\"106\" y=\"100\" font-size=\"9\" fill=\"#63b3ed\" font-family=\"monospace\">→ alerts + dual-write</text>\n      </g>\n      \n      <!-- Syswatch -->\n      <g class=\"node-anim\" style=\"animation-delay:0.15s\">\n        <rect x=\"90\" y=\"132\" width=\"170\" height=\"75\" rx=\"8\" fill=\"#1a2235\" stroke=\"rgba(56,217,169,0.25)\" stroke-width=\"1\"/>\n        <circle cx=\"106\" cy=\"150\" r=\"4\" fill=\"#38d9a9\"/>\n        <text x=\"118\" y=\"154\" font-size=\"11\" font-weight=\"600\" fill=\"#e8edf5\" font-family=\"monospace\">syswatch</text>\n        <text x=\"106\" y=\"172\" font-size=\"9\" fill=\"#5a6478\" font-family=\"monospace\">/proc · 5s interval</text>\n        <text x=\"106\" y=\"190\" font-size=\"9\" fill=\"#38d9a9\" font-family=\"monospace\">→ metrics stream</text>\n      </g>\n      \n      <!-- Netlab -->\n      <g class=\"node-anim\" style=\"animation-delay:0.2s\">\n        <rect x=\"90\" y=\"222\" width=\"170\" height=\"60\" rx=\"8\" fill=\"#1a2235\" stroke=\"rgba(246,173,85,0.2)\" stroke-width=\"1\"/>\n        <circle cx=\"106\" cy=\"240\" r=\"4\" fill=\"#f6ad55\"/>\n        <text x=\"118\" y=\"244\" font-size=\"11\" font-weight=\"600\" fill=\"#e8edf5\" font-family=\"monospace\">netlab</text>\n        <text x=\"106\" y=\"262\" font-size=\"9\" fill=\"#5a6478\" font-family=\"monospace\">attack sim · ns-atk</text>\n      </g>\n      \n      <!-- Mosquitto -->\n      <g class=\"node-anim\" style=\"animation-delay:0.3s\">\n        <rect x=\"340\" y=\"42\" width=\"160\" height=\"80\" rx=\"8\" fill=\"#1a2235\" stroke=\"rgba(99,179,237,0.25)\" stroke-width=\"1\"/>\n        <circle cx=\"356\" cy=\"60\" r=\"4\" fill=\"#38d9a9\"/>\n        <text x=\"368\" y=\"64\" font-size=\"11\" font-weight=\"600\" fill=\"#e8edf5\" font-family=\"monospace\">Mosquitto</text>\n        <text x=\"356\" y=\"82\" font-size=\"9\" fill=\"#5a6478\" font-family=\"monospace\">MQTT · :1883</text>\n        <text x=\"356\" y=\"100\" font-size=\"9\" fill=\"#8b95a8\" font-family=\"monospace\">3 topics</text>\n      </g>\n      \n      <!-- Redis -->\n      <g class=\"node-anim\" style=\"animation-delay:0.35s\">\n        <rect x=\"340\" y=\"140\" width=\"160\" height=\"70\" rx=\"8\" fill=\"#1a2235\" stroke=\"rgba(252,92,101,0.2)\" stroke-width=\"1\"/>\n        <circle cx=\"356\" cy=\"158\" r=\"4\" fill=\"#38d9a9\"/>\n        <text x=\"368\" y=\"162\" font-size=\"11\" font-weight=\"600\" fill=\"#e8edf5\" font-family=\"monospace\">Redis</text>\n        <text x=\"356\" y=\"180\" font-size=\"9\" fill=\"#5a6478\" font-family=\"monospace\">streams · :6379</text>\n        <text x=\"356\" y=\"196\" font-size=\"9\" fill=\"#fc5c65\" font-family=\"monospace\">3 active streams</text>\n      </g>\n      \n      <!-- n8n -->\n      <g class=\"node-anim\" style=\"animation-delay:0.4s\">\n        <rect x=\"580\" y=\"132\" width=\"155\" height=\"75\" rx=\"8\" fill=\"#1a2235\" stroke=\"rgba(183,148,246,0.25)\" stroke-width=\"1\"/>\n        <circle cx=\"596\" cy=\"150\" r=\"4\" fill=\"#38d9a9\"/>\n        <text x=\"608\" y=\"154\" font-size=\"11\" font-weight=\"600\" fill=\"#e8edf5\" font-family=\"monospace\">n8n</text>\n        <text x=\"596\" y=\"172\" font-size=\"9\" fill=\"#5a6478\" font-family=\"monospace\">workflows · :5678</text>\n        <text x=\"596\" y=\"190\" font-size=\"9\" fill=\"#b794f6\" font-family=\"monospace\">2 active</text>\n      </g>\n      \n      <!-- Grafana -->\n      <g class=\"node-anim\" style=\"animation-delay:0.45s\">\n        <rect x=\"580\" y=\"222\" width=\"155\" height=\"60\" rx=\"8\" fill=\"#1a2235\" stroke=\"rgba(246,173,85,0.2)\" stroke-width=\"1\"/>\n        <circle cx=\"596\" cy=\"240\" r=\"4\" fill=\"#38d9a9\"/>\n        <text x=\"608\" y=\"244\" font-size=\"11\" font-weight=\"600\" fill=\"#e8edf5\" font-family=\"monospace\">Grafana</text>\n        <text x=\"596\" y=\"262\" font-size=\"9\" fill=\"#5a6478\" font-family=\"monospace\">SQLite+Redis · :3000</text>\n      </g>\n      \n      <!-- Discord -->\n      <g class=\"node-anim\" style=\"animation-delay:0.5s\">\n        <rect x=\"800\" y=\"68\" width=\"90\" height=\"50\" rx=\"8\" fill=\"#1a2235\" stroke=\"rgba(183,148,246,0.2)\" stroke-width=\"1\"/>\n        <circle cx=\"816\" cy=\"86\" r=\"4\" fill=\"#b794f6\"/>\n        <text x=\"828\" y=\"90\" font-size=\"11\" font-weight=\"600\" fill=\"#e8edf5\" font-family=\"monospace\">Discord</text>\n        <text x=\"816\" y=\"106\" font-size=\"9\" fill=\"#5a6478\" font-family=\"monospace\">ai-lab</text>\n      </g>\n      \n      <!-- Sweep label -->\n      <g class=\"node-anim\" style=\"animation-delay:0.5s\">\n        <rect x=\"800\" y=\"222\" width=\"90\" height=\"50\" rx=\"8\" fill=\"#1a2235\" stroke=\"rgba(56,217,169,0.2)\" stroke-width=\"1\"/>\n        <circle cx=\"816\" cy=\"240\" r=\"4\" fill=\"#38d9a9\"/>\n        <text x=\"828\" y=\"244\" font-size=\"11\" font-weight=\"600\" fill=\"#e8edf5\" font-family=\"monospace\">SQLite</text>\n        <text x=\"816\" y=\"262\" font-size=\"9\" fill=\"#5a6478\" font-family=\"monospace\">cold store</text>\n      </g>\n\n      <!-- Host labels -->\n      <rect x=\"90\" y=\"294\" width=\"170\" height=\"0\" rx=\"0\" fill=\"none\"/>\n      <text x=\"175\" y=\"296\" font-size=\"8\" fill=\"#5a6478\" text-anchor=\"middle\" font-family=\"monospace\" letter-spacing=\"0.05em\">ARCH VM · 192.168.1.51</text>\n      \n      <text x=\"500\" y=\"296\" font-size=\"8\" fill=\"#5a6478\" text-anchor=\"middle\" font-family=\"monospace\" letter-spacing=\"0.05em\">POP!_OS · 192.168.1.50</text>\n    </svg>\n  </div>\n  \n  <!-- Flow table -->\n  <div class=\"topo-flows\">\n    <div class=\"flow-hdr\">\n      <span>Topic</span>\n      <span>Source</span>\n      <span>Consumer</span>\n      <span>Status</span>\n      <span>Rate</span>\n    </div>\n    <div class=\"flow-row\">\n      <span class=\"flow-topic\">codex/sentinel/alerts</span>\n      <span>sentinel (Arch)</span>\n      <span>n8n, Redis</span>\n      <span class=\"flow-status\"><span class=\"dot dot-active\"></span> active</span>\n      <span class=\"flow-rate\">~3/min</span>\n    </div>\n    <div class=\"flow-row\">\n      <span class=\"flow-topic\">codex/syswatch/metrics</span>\n      <span>syswatch (Arch)</span>\n      <span>metrics_receiver</span>\n      <span class=\"flow-status\"><span class=\"dot dot-active\"></span> active</span>\n      <span class=\"flow-rate\">12/min</span>\n    </div>\n    <div class=\"flow-row\">\n      <span class=\"flow-topic\">codex/netlab/attacks</span>\n      <span>run_attack.py</span>\n      <span>Redis</span>\n      <span class=\"flow-status\"><span class=\"dot dot-standby\"></span> standby</span>\n      <span class=\"flow-rate\">on trigger</span>\n    </div>\n  </div>\n</div>\n",
+        "onInit": "",
+        "onInitOnResize": false,
+        "onRender": "",
+        "overflow": "hidden",
+        "panelupdateOnMount": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull",
+            "last",
+            "firstNotNull",
+            "first",
+            "min",
+            "max",
+            "mean",
+            "median",
+            "sum",
+            "count",
+            "range",
+            "delta",
+            "step",
+            "diff",
+            "logmin",
+            "allIsZero",
+            "allIsNull",
+            "diffperc"
+          ]
+        },
+        "renderOnMount": true,
+        "rootCSS": "",
+        "useGrafanaScrollbar": true
+      },
+      "pluginVersion": "2.2.3",
+      "targets": [
+        {
+          "refId": "A"
+        }
+      ],
+      "title": "NETWORK TOPOLOGY V2",
+      "transparent": true,
+      "type": "gapit-htmlgraphics-panel"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "id": 102,
+      "panels": [],
+      "title": "Alert timeline & history",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "cfgmnrokea0owa"
+      },
+      "description": "Visual timeline showing when alerts fired and their severity",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "fillOpacity": 70,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineWidth": 0,
+            "spanNulls": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "text": "none"
+                },
+                "1": {
+                  "text": "low"
+                },
+                "2": {
+                  "text": "medium"
+                },
+                "3": {
+                  "text": "high"
+                },
+                "4": {
+                  "text": "critical"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "#38d9a9",
+                "value": 1
+              },
+              {
+                "color": "#63b3ed",
+                "value": 2
+              },
+              {
+                "color": "#f6ad55",
+                "value": 3
+              },
+              {
+                "color": "#fc5c65",
+                "value": 4
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 20,
+      "options": {
+        "alignValue": "center",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "mergeValues": false,
+        "rowHeight": 0.8,
+        "showValue": "auto",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "rawQueryText": "SELECT timestamp as time, CASE severity WHEN 'critical' THEN 4 WHEN 'high' THEN 3 WHEN 'medium' THEN 2 WHEN 'low' THEN 1 ELSE 0 END as severity_level, json_extract(payload, '$.data.detection_type') as detection FROM events WHERE event_type = 'alert' ORDER BY timestamp",
+          "refId": "A"
+        }
+      ],
+      "title": "Alert timeline by severity",
+      "type": "state-timeline"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "cfgmnrokea0owa"
+      },
+      "description": "Count of each detection type from sentinel",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#63b3ed",
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "scheme",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 0,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#63b3ed",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 42
+      },
+      "id": 21,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.7,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "hidden",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "rawQueryText": "SELECT json_extract(payload, '$.data.detection_type') as detection_type, COUNT(*) as count FROM events WHERE event_type = 'alert' AND json_extract(payload, '$.data.detection_type') IS NOT NULL GROUP BY detection_type ORDER BY count DESC LIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "Alerts by detection type",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "cfgmnrokea0owa"
+      },
+      "description": "Full historical alert log from SQLite",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "inspect": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "critical": {
+                        "text": "🔴 CRITICAL"
+                      },
+                      "high": {
+                        "text": "🟠 HIGH"
+                      },
+                      "low": {
+                        "text": "🟢 LOW"
+                      },
+                      "medium": {
+                        "text": "🟡 MEDIUM"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "timestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 42
+      },
+      "id": 22,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": true,
+          "fields": "",
+          "reducer": [
+            "count"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "timestamp"
+          }
+        ]
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "rawQueryText": "SELECT timestamp, severity, json_extract(payload, '$.data.detection_type') as detection, json_extract(payload, '$.data.src_ip') as src_ip, json_extract(payload, '$.data.dst_ip') as dst_ip, json_extract(payload, '$.data.message') as message FROM events WHERE event_type = 'alert' ORDER BY timestamp DESC LIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "title": "Alert history (detailed)",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 50
+      },
+      "id": 103,
+      "panels": [],
+      "title": "Data flow",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "cfgmnrokea0owa"
+      },
+      "description": "Active MQTT topics with event counts and last seen time",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "topic"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 280
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 51
+      },
+      "id": 30,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "rawQueryText": "SELECT mqtt_topic as topic, source, COUNT(*) as event_count, MAX(timestamp) as last_seen FROM events GROUP BY mqtt_topic ORDER BY last_seen DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "MQTT data flow status",
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "10s",
+  "schemaVersion": 40,
+  "tags": [
+    "codex",
+    "security",
+    "soc"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m"
+    ]
+  },
+  "timezone": "browser",
+  "title": "SOC Command Center-v2",
+  "uid": "codex-soc-v2",
+  "version": 4,
+  "weekStart": ""
+}

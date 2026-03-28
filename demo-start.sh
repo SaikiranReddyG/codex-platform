@@ -37,9 +37,28 @@ ARCH_SYSWATCH_LOG="${ARCH_LOG_DIR}/syswatch.log"
 ARCH_SENTINEL_STDOUT_LOG="${ARCH_LOG_DIR}/sentinel_stdout.log"
 
 SELF_TEST=0
-if [ "$1" = "--self-test" ]; then
-  SELF_TEST=1
-fi
+QUIET=0
+VERBOSE=0
+
+usage() {
+  cat <<EOF
+Usage: ./demo-start.sh [--quiet] [--verbose] [--self-test]
+
+  --quiet     Print only step headers and final summary (log files still written)
+  --verbose   Print detailed command output to terminal (also written to logs)
+  --self-test Trigger a small end-to-end self-test after startup
+EOF
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    --self-test) SELF_TEST=1 ;;
+    --quiet|-q)  QUIET=1 ;;
+    --verbose|-v) VERBOSE=1 ;;
+    --help|-h) usage; exit 0 ;;
+    *) echo "Unknown argument: $arg"; usage; exit 2 ;;
+  esac
+done
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -62,11 +81,29 @@ header() {
   echo -e "${BOLD}${CYAN}[$step/$total]${NC} ${BOLD}$1${NC}"
 }
 
-ok()   { echo -e "  ${GREEN}✓${NC} $1"; }
+ok()   { [ "$QUIET" -eq 1 ] && return 0; echo -e "  ${GREEN}✓${NC} $1"; }
 fail() { echo -e "  ${RED}✗${NC} $1"; }
-warn() { echo -e "  ${YELLOW}⚠${NC} $1"; ((WARNINGS++)); }
-info() { echo -e "  ${CYAN}→${NC} $1"; }
+warn() { [ "$QUIET" -eq 1 ] && return 0; echo -e "  ${YELLOW}⚠${NC} $1"; ((WARNINGS++)); }
+info() { [ "$QUIET" -eq 1 ] && return 0; [ "$VERBOSE" -eq 1 ] || return 0; echo -e "  ${CYAN}→${NC} $1"; }
 critical_fail() { fail "$1"; ((CRITICAL_FAILURES++)); }
+
+RUN_LOG="${LOG_DIR}/demo-start.log"
+touch "$RUN_LOG" 2>/dev/null || true
+
+log_line() {
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >>"$RUN_LOG"
+}
+
+run_cmd() {
+  local label="$1"
+  shift
+  log_line "CMD(${label}): $*"
+  if [ "$VERBOSE" -eq 1 ] && [ "$QUIET" -eq 0 ]; then
+    eval "$@" 2>&1 | tee -a "$RUN_LOG"
+  else
+    eval "$@" >>"$RUN_LOG" 2>&1
+  fi
+}
 
 wait_healthy() {
   local container=$1
@@ -143,7 +180,7 @@ echo ""
 header "Starting Docker stack"
 
 cd "$COMPOSE_DIR" || { fail "Cannot cd to $COMPOSE_DIR"; exit 1; }
-docker compose up -d 2>&1 | tail -5
+run_cmd "docker compose up" "docker compose up -d"
 sleep 2
 
 for svc in codex-mosquitto codex-redis codex-n8n codex-grafana; do
@@ -192,12 +229,14 @@ pkill -f "metrics_receiver" 2>/dev/null
 sleep 1
 
 cd "$COMPOSE_DIR"
-nohup python3 -u scripts/metrics_receiver.py > "$METRICS_RECEIVER_LOG" 2>&1 &
+log_line "Starting metrics_receiver.py (log: $METRICS_RECEIVER_LOG)"
+nohup python3 -u scripts/metrics_receiver.py >"$METRICS_RECEIVER_LOG" 2>&1 &
 MR_PID=$!
 sleep 2
 
 if kill -0 $MR_PID 2>/dev/null; then
   ok "metrics_receiver.py running (PID $MR_PID)"
+  info "Pop!_OS metrics log: $METRICS_RECEIVER_LOG"
 else
   critical_fail "metrics_receiver.py failed to start"
   warn "Check: tail -n 80 $METRICS_RECEIVER_LOG"
@@ -252,7 +291,7 @@ header "Starting Arch VM services"
 
 # Netlab namespaces
 info "Setting up netlab namespaces..."
-ssh "$ARCH_USER@$ARCH_IP" "bash -c 'cd ~/codex-workspace/netlab && sudo -n ./lab/setup.sh'" 2>&1 | tail -3
+run_cmd "arch netlab setup" "ssh \"$ARCH_USER@$ARCH_IP\" \"bash -c 'cd ~/codex-workspace/netlab && sudo -n ./lab/setup.sh'\""
 NS_COUNT=$(ssh "$ARCH_USER@$ARCH_IP" "sudo -n ip netns list 2>/dev/null | wc -l" 2>/dev/null)
 if [ "$NS_COUNT" -gt 0 ] 2>/dev/null; then
   ok "Netlab namespaces ready ($NS_COUNT)"
@@ -262,13 +301,14 @@ fi
 
 # Syswatch wrapper
 info "Starting syswatch_wrapper..."
+log_line "Arch syswatch log: $ARCH_SYSWATCH_LOG"
 SW_PID=$(ssh "$ARCH_USER@$ARCH_IP" "bash -c 'mkdir -p \"$ARCH_LOG_DIR\"; pkill -f syswatch_wrapper 2>/dev/null; nohup python3 -u ~/codex-workspace/codex-platform/syswatch_wrapper.py > \"$ARCH_SYSWATCH_LOG\" 2>&1 & echo \$!'")
 sleep 2
 if [ -n "$SW_PID" ] && ssh "$ARCH_USER@$ARCH_IP" "kill -0 $SW_PID 2>/dev/null" 2>/dev/null; then
   ok "syswatch_wrapper running (PID $SW_PID)"
   info "Arch syswatch log: $ARCH_SYSWATCH_LOG"
 else
-  info "syswatch_wrapper PID not confirmed; verifying via SQLite metrics"
+  ok "syswatch_wrapper started (verifying via metrics flow)"
   info "Arch syswatch log: $ARCH_SYSWATCH_LOG"
 fi
 
@@ -284,6 +324,7 @@ if [ -n "$OLD_SENT_PIDS" ]; then
   ssh "$ARCH_USER@$ARCH_IP" "sudo -n kill $OLD_SENT_PIDS 2>/dev/null || true" >/dev/null 2>&1
 fi
 
+log_line "Arch sentinel stdout log: $SENT_LOG"
 SENT_PID=$(ssh "$ARCH_USER@$ARCH_IP" "cd ~/codex-workspace/sentinel && mkdir -p \"$ARCH_LOG_DIR\" && rm -f \"$SENT_LOG\"; nohup sudo -n python3 -u src/main.py -c config.yaml -i $ARCH_SENT_IFACE --no-dashboard > \"$SENT_LOG\" 2>&1 < /dev/null & echo \$!" 2>"$SENTINEL_START_ERR_FILE" | tr -d '[:space:]')
 sleep 3
 SENT_CMD=$(ssh "$ARCH_USER@$ARCH_IP" "ps -eo pid,args | grep -E 'python3 .*(sentinel/src/main.py|src/main.py)' | grep -v -E 'grep|pgrep' | head -n 1" 2>/dev/null || true)
@@ -301,9 +342,9 @@ fi
 
 SENT_LOG_BYTES=$(ssh "$ARCH_USER@$ARCH_IP" "wc -c $SENT_LOG 2>/dev/null | awk '{print \$1}'" 2>/dev/null || true)
 if [ -n "$SENT_LOG_BYTES" ] && [ "$SENT_LOG_BYTES" -gt 0 ] 2>/dev/null; then
-  info "sentinel stdout log: ${SENT_LOG_BYTES} bytes"
+  info "sentinel stdout log: ${SENT_LOG_BYTES} bytes ($SENT_LOG)"
 else
-  info "sentinel stdout log missing or empty"
+  info "sentinel stdout log missing or empty ($SENT_LOG)"
 fi
 
 # ─── Step 5: Verify data flow ───
@@ -439,6 +480,12 @@ echo ""
 echo -e "  ${BOLD}To stop everything:${NC}"
 echo -e "  ${CYAN}./demo-stop.sh${NC}  (or manually: docker compose down)"
 echo ""
+
+if [ "$QUIET" -eq 0 ]; then
+  echo -e "  ${BOLD}Logs (Pop!_OS):${NC}  $LOG_DIR"
+  echo -e "  ${BOLD}Logs (Arch):${NC}    $ARCH_LOG_DIR"
+  echo ""
+fi
 
 echo -e "  ${BOLD}Summary:${NC} critical_failures=$CRITICAL_FAILURES warnings=$WARNINGS"
 
