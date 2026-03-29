@@ -22,9 +22,9 @@ Usage in syswatch wrapper:
     bus.publish_metrics({"cpu": 45.2, "memory": 62.1, "disk": 78.0})
 
 Environment variables (override defaults):
-    CODEX_POPOS_IP   — Pop!_OS IP address (default: 192.168.1.50)
-    CODEX_MQTT_PORT  — Mosquitto port (default: 1883)
-    CODEX_REDIS_PORT — Redis port (default: 6379)
+    CODEX_POPOS_IP   — Pop!_OS IP address
+    CODEX_MQTT_PORT  — Mosquitto port
+    CODEX_REDIS_PORT — Redis port
 """
 
 import json
@@ -36,6 +36,32 @@ import paho.mqtt.client as mqtt
 import redis as redis_lib
 
 
+def _load_dotenv(path: str) -> None:
+    if not os.path.isfile(path):
+        return
+    with open(path, "r", encoding="utf-8") as fh:
+        for raw in fh:
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_load_dotenv(os.path.join(_SCRIPT_DIR, ".env"))
+
+
+def _required_env(name: str) -> str:
+    value = os.environ.get(name)
+    if value is None or value == "":
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
+
 class CodexBus:
     """Publish events to the codex-platform MQTT broker and Redis store."""
 
@@ -45,9 +71,12 @@ class CodexBus:
             source: Name of the publishing tool (sentinel, netlab, syswatch)
         """
         self.source = source
-        self.popos_ip = os.environ.get("CODEX_POPOS_IP", "192.168.1.50")
-        self.mqtt_port = int(os.environ.get("CODEX_MQTT_PORT", "1883"))
-        self.redis_port = int(os.environ.get("CODEX_REDIS_PORT", "6379"))
+        self.popos_ip = _required_env("CODEX_POPOS_IP")
+        self.mqtt_port = int(_required_env("CODEX_MQTT_PORT"))
+        self.redis_port = int(_required_env("CODEX_REDIS_PORT"))
+        self.mqtt_user = _required_env("CODEX_MQTT_USER")
+        self.mqtt_pass = _required_env("CODEX_MQTT_PASS")
+        self.redis_pass = _required_env("CODEX_REDIS_PASS")
 
         # MQTT client (paho-mqtt v2.x with VERSION2 callbacks)
         self._mqtt = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
@@ -60,7 +89,7 @@ class CodexBus:
         """Connect to MQTT broker and Redis on Pop!_OS."""
         # MQTT
         try:
-            self._mqtt.username_pw_set("codex", "codex-mqtt-2026")
+            self._mqtt.username_pw_set(self.mqtt_user, self.mqtt_pass)
             self._mqtt.connect(self.popos_ip, self.mqtt_port, keepalive=60)
             self._mqtt.loop_start()
             self._mqtt_connected = True
@@ -74,7 +103,7 @@ class CodexBus:
             self._redis = redis_lib.Redis(
                 host=self.popos_ip,
                 port=self.redis_port,
-                password="codex-redis-2026",
+                password=self.redis_pass,
                 decode_responses=True
             )
             self._redis.ping()

@@ -66,6 +66,18 @@ codex-platform/
 
 ## Quick Start
 
+### 0. Create local env file
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` for your machine before running demo scripts. Common fields:
+- `CODEX_COMPOSE_DIR`
+- `CODEX_ARCH_WORKSPACE`
+- `CODEX_ARCH_IP`, `CODEX_ARCH_USER`, `CODEX_POPOS_IP`
+- `CODEX_MQTT_*`, `CODEX_REDIS_*`, `CODEX_N8N_PORT`, `CODEX_GRAFANA_*`
+
 ### 1. Start the stack
 
 ```bash

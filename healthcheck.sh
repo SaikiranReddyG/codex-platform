@@ -8,21 +8,60 @@
 
 set -o pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_COMPOSE_DIR="$SCRIPT_DIR"
+COMPOSE_DIR="${CODEX_COMPOSE_DIR:-$DEFAULT_COMPOSE_DIR}"
+ENV_FILE="${CODEX_ENV_FILE:-$COMPOSE_DIR/.env}"
+if [ -f "$ENV_FILE" ]; then
+  set -a
+  . "$ENV_FILE"
+  set +a
+fi
+
 # ─── Config ───
-ARCH_IP="192.168.1.51"
-ARCH_USER="sai"
-POPOS_IP="192.168.1.50"
-MQTT_PORT=1883
-REDIS_PORT=6379
-N8N_PORT=5678
-GRAFANA_PORT=3000
-SQLITE_DB="$HOME/codex-workspace/codex-platform/sqlite/codex.db"
-COMPOSE_DIR="$HOME/codex-workspace/codex-platform"
+COMPOSE_DIR="${CODEX_COMPOSE_DIR:-$DEFAULT_COMPOSE_DIR}"
+require_env() {
+  local var_name="$1"
+  if [ -z "${!var_name:-}" ]; then
+    echo "[!] Missing required environment variable: $var_name"
+    echo "    Set it in $ENV_FILE or export it before running."
+    exit 2
+  fi
+}
+
+require_env CODEX_LOCAL_HOST
+require_env CODEX_ARCH_IP
+require_env CODEX_ARCH_USER
+require_env CODEX_ARCH_WORKSPACE
+require_env CODEX_POPOS_IP
+require_env CODEX_MQTT_PORT
+require_env CODEX_REDIS_PORT
+require_env CODEX_N8N_PORT
+require_env CODEX_GRAFANA_PORT
+require_env CODEX_SQLITE_DB
+require_env CODEX_MQTT_USER
+require_env CODEX_MQTT_PASS
+require_env CODEX_REDIS_PASS
+require_env CODEX_GRAFANA_ADMIN_USER
+require_env CODEX_GRAFANA_ADMIN_PASSWORD
+
+LOCAL_HOST="$CODEX_LOCAL_HOST"
+ARCH_IP="$CODEX_ARCH_IP"
+ARCH_USER="$CODEX_ARCH_USER"
+ARCH_WORKSPACE="$CODEX_ARCH_WORKSPACE"
+POPOS_IP="$CODEX_POPOS_IP"
+MQTT_PORT="$CODEX_MQTT_PORT"
+REDIS_PORT="$CODEX_REDIS_PORT"
+N8N_PORT="$CODEX_N8N_PORT"
+GRAFANA_PORT="$CODEX_GRAFANA_PORT"
+SQLITE_DB="$CODEX_SQLITE_DB"
 
 # Auth (must match docker-compose.yml)
-MQTT_USER="codex"
-MQTT_PASS="codex-mqtt-2026"
-REDIS_PASS="codex-redis-2026"
+MQTT_USER="$CODEX_MQTT_USER"
+MQTT_PASS="$CODEX_MQTT_PASS"
+REDIS_PASS="$CODEX_REDIS_PASS"
+GRAFANA_ADMIN_USER="$CODEX_GRAFANA_ADMIN_USER"
+GRAFANA_ADMIN_PASSWORD="$CODEX_GRAFANA_ADMIN_PASSWORD"
 
 # ─── Colors ───
 RED='\033[0;31m'
@@ -100,7 +139,7 @@ fi
 section "2/8" "MQTT broker (Mosquitto :$MQTT_PORT)"
 
 # Test MQTT port is reachable
-if timeout 3 bash -c "echo >/dev/tcp/localhost/$MQTT_PORT" 2>/dev/null; then
+if timeout 3 bash -c "echo >/dev/tcp/$LOCAL_HOST/$MQTT_PORT" 2>/dev/null; then
   pass "Mosquitto port $MQTT_PORT is open"
 else
   fail "Mosquitto port $MQTT_PORT not reachable"
@@ -110,10 +149,10 @@ fi
 if command -v mosquitto_pub &>/dev/null && command -v mosquitto_sub &>/dev/null; then
   TEST_MSG="healthcheck-$(date +%s)"
   # Subscribe in background, wait for message, timeout after 3s
-  timeout 3 mosquitto_sub -h localhost -p $MQTT_PORT -u "$MQTT_USER" -P "$MQTT_PASS" -t "codex/healthcheck" -C 1 > /tmp/mqtt_test 2>/dev/null &
+  timeout 3 mosquitto_sub -h "$LOCAL_HOST" -p "$MQTT_PORT" -u "$MQTT_USER" -P "$MQTT_PASS" -t "codex/healthcheck" -C 1 > /tmp/mqtt_test 2>/dev/null &
   SUB_PID=$!
   sleep 0.5
-  mosquitto_pub -h localhost -p $MQTT_PORT -u "$MQTT_USER" -P "$MQTT_PASS" -t "codex/healthcheck" -m "$TEST_MSG" 2>/dev/null
+  mosquitto_pub -h "$LOCAL_HOST" -p "$MQTT_PORT" -u "$MQTT_USER" -P "$MQTT_PASS" -t "codex/healthcheck" -m "$TEST_MSG" 2>/dev/null
   wait $SUB_PID 2>/dev/null
   RECEIVED=$(cat /tmp/mqtt_test 2>/dev/null)
   if [ "$RECEIVED" = "$TEST_MSG" ]; then
@@ -140,7 +179,7 @@ fi
 section "3/8" "Redis (:$REDIS_PORT)"
 
 # Test Redis port
-if timeout 3 bash -c "echo >/dev/tcp/localhost/$REDIS_PORT" 2>/dev/null; then
+if timeout 3 bash -c "echo >/dev/tcp/$LOCAL_HOST/$REDIS_PORT" 2>/dev/null; then
   pass "Redis port $REDIS_PORT is open"
 else
   fail "Redis port $REDIS_PORT not reachable"
@@ -237,14 +276,14 @@ fi
 section "5/8" "n8n workflows (:$N8N_PORT)"
 
 # Test n8n port
-if timeout 3 bash -c "echo >/dev/tcp/localhost/$N8N_PORT" 2>/dev/null; then
+if timeout 3 bash -c "echo >/dev/tcp/$LOCAL_HOST/$N8N_PORT" 2>/dev/null; then
   pass "n8n port $N8N_PORT is open"
 else
   fail "n8n port $N8N_PORT not reachable"
 fi
 
 # Test n8n API health
-N8N_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$N8N_PORT/healthz" 2>/dev/null)
+N8N_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "http://$LOCAL_HOST:$N8N_PORT/healthz" 2>/dev/null)
 if [ "$N8N_HEALTH" = "200" ]; then
   pass "n8n health endpoint OK (200)"
 else
@@ -252,7 +291,7 @@ else
 fi
 
 # Test red team webhook
-WEBHOOK_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$N8N_PORT/webhook/red-team" 2>/dev/null)
+WEBHOOK_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://$LOCAL_HOST:$N8N_PORT/webhook/red-team" 2>/dev/null)
 if [ "$WEBHOOK_STATUS" = "200" ] || [ "$WEBHOOK_STATUS" = "500" ]; then
   # 500 is expected if Arch is not reachable — it means the webhook triggered
   pass "Red team webhook reachable (HTTP $WEBHOOK_STATUS)"
@@ -269,14 +308,14 @@ fi
 section "6/8" "Grafana (:$GRAFANA_PORT)"
 
 # Test Grafana port
-if timeout 3 bash -c "echo >/dev/tcp/localhost/$GRAFANA_PORT" 2>/dev/null; then
+if timeout 3 bash -c "echo >/dev/tcp/$LOCAL_HOST/$GRAFANA_PORT" 2>/dev/null; then
   pass "Grafana port $GRAFANA_PORT is open"
 else
   fail "Grafana port $GRAFANA_PORT not reachable"
 fi
 
 # Test Grafana API
-GRAFANA_HEALTH=$(curl -s "http://localhost:$GRAFANA_PORT/api/health" 2>/dev/null)
+GRAFANA_HEALTH=$(curl -s "http://$LOCAL_HOST:$GRAFANA_PORT/api/health" 2>/dev/null)
 if echo "$GRAFANA_HEALTH" | grep -q '"database": "ok"'; then
   pass "Grafana API healthy"
 else
@@ -284,7 +323,7 @@ else
 fi
 
 # Check datasources
-DS_LIST=$(curl -s "http://admin:codex@localhost:$GRAFANA_PORT/api/datasources" 2>/dev/null)
+DS_LIST=$(curl -s "http://${GRAFANA_ADMIN_USER}:${GRAFANA_ADMIN_PASSWORD}@$LOCAL_HOST:$GRAFANA_PORT/api/datasources" 2>/dev/null)
 if echo "$DS_LIST" | grep -q "redis-datasource"; then
   pass "Redis datasource configured"
 else
@@ -297,11 +336,11 @@ else
 fi
 
 # Check dashboards
-DASH_COUNT=$(curl -s "http://admin:codex@localhost:$GRAFANA_PORT/api/search?type=dash-db" 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null)
+DASH_COUNT=$(curl -s "http://${GRAFANA_ADMIN_USER}:${GRAFANA_ADMIN_PASSWORD}@$LOCAL_HOST:$GRAFANA_PORT/api/search?type=dash-db" 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null)
 if [ -n "$DASH_COUNT" ] && [ "$DASH_COUNT" -gt 0 ] 2>/dev/null; then
   pass "Dashboards found: $DASH_COUNT"
   # List them
-  curl -s "http://admin:codex@localhost:$GRAFANA_PORT/api/search?type=dash-db" 2>/dev/null | python3 -c "
+  curl -s "http://${GRAFANA_ADMIN_USER}:${GRAFANA_ADMIN_PASSWORD}@$LOCAL_HOST:$GRAFANA_PORT/api/search?type=dash-db" 2>/dev/null | python3 -c "
 import sys, json
 for d in json.load(sys.stdin):
     print(f\"       • {d.get('title', '?')} (uid: {d.get('uid', '?')})\")" 2>/dev/null
@@ -343,7 +382,7 @@ if timeout 5 ssh -o BatchMode=yes -o ConnectTimeout=3 "$ARCH_USER@$ARCH_IP" "ech
     pass "sentinel is running (PID $SENTINEL_PID)"
   else
     warn "sentinel is NOT running"
-    info "Start with: cd ~/codex-workspace/sentinel && sudo python3 src/main.py -i br-lab --no-dashboard"
+    info "Start with: cd $ARCH_WORKSPACE/sentinel && sudo python3 src/main.py -i br-lab --no-dashboard"
   fi
 
   # Check syswatch_wrapper
@@ -352,7 +391,7 @@ if timeout 5 ssh -o BatchMode=yes -o ConnectTimeout=3 "$ARCH_USER@$ARCH_IP" "ech
     pass "syswatch_wrapper is running (PID $SYSWATCH_PID)"
   else
     warn "syswatch_wrapper is NOT running"
-    info "Start with: python3 ~/codex-workspace/codex-platform/syswatch_wrapper.py &"
+    info "Start with: python3 $ARCH_WORKSPACE/codex-platform/syswatch_wrapper.py &"
   fi
 
   # Check netlab namespaces
@@ -361,7 +400,7 @@ if timeout 5 ssh -o BatchMode=yes -o ConnectTimeout=3 "$ARCH_USER@$ARCH_IP" "ech
     pass "Netlab namespaces exist ($NS_COUNT)"
   else
     warn "Netlab namespaces not set up"
-    info "Run: cd ~/codex-workspace/netlab && sudo ./lab/setup.sh"
+    info "Run: cd $ARCH_WORKSPACE/netlab && sudo ./lab/setup.sh"
   fi
 
   # Check br-lab bridge
@@ -404,7 +443,7 @@ if [ -n "$MR_PID" ]; then
   pass "metrics_receiver.py is running (PID $MR_PID)"
 else
   warn "metrics_receiver.py is NOT running"
-  info "Start with: python3 ~/codex-workspace/codex-platform/scripts/metrics_receiver.py &"
+  info "Start with: python3 $COMPOSE_DIR/scripts/metrics_receiver.py &"
 fi
 
 # Check sweep.py cron
@@ -456,19 +495,19 @@ if [ $WARN -gt 0 ] || [ $FAIL -gt 0 ]; then
   echo -e "${BOLD}  Quick-start commands:${NC}"
   echo ""
   echo "  # Pop!_OS — start the stack"
-  echo "  cd ~/codex-workspace/codex-platform && docker compose up -d"
+  echo "  cd $COMPOSE_DIR && docker compose up -d"
   echo ""
   echo "  # Pop!_OS — start metrics receiver"
-  echo "  python3 ~/codex-workspace/codex-platform/scripts/metrics_receiver.py &"
+  echo "  python3 $COMPOSE_DIR/scripts/metrics_receiver.py &"
   echo ""
   echo "  # Arch VM — start everything for demo"
   echo "  ssh $ARCH_USER@$ARCH_IP"
   echo "  bash   # if mysh is default shell"
-  echo "  cd ~/codex-workspace/netlab && sudo ./lab/setup.sh"
-  echo "  python3 ~/codex-workspace/codex-platform/syswatch_wrapper.py &"
-  echo "  cd ~/codex-workspace/sentinel && sudo python3 src/main.py -i br-lab --no-dashboard"
+  echo "  cd $ARCH_WORKSPACE/netlab && sudo ./lab/setup.sh"
+  echo "  python3 $ARCH_WORKSPACE/codex-platform/syswatch_wrapper.py &"
+  echo "  cd $ARCH_WORKSPACE/sentinel && sudo python3 src/main.py -i br-lab --no-dashboard"
   echo ""
   echo "  # Trigger demo"
-  echo "  curl http://localhost:$N8N_PORT/webhook/red-team"
+  echo "  curl http://$LOCAL_HOST:$N8N_PORT/webhook/red-team"
   echo ""
 fi

@@ -6,5 +6,6 @@ mosquitto/log/
 mosquitto/config/passwd
 logs/
 sqlite/codex.db
+.env
 *.pyc
 __pycache__/

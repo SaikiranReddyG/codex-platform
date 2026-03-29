@@ -8,6 +8,37 @@ import paho.mqtt.client as mqtt
 PLATFORM_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(PLATFORM_DIR, "sqlite", "codex.db")
 
+
+def _load_dotenv(path: str) -> None:
+    if not os.path.isfile(path):
+        return
+    with open(path, "r", encoding="utf-8") as fh:
+        for raw in fh:
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+_load_dotenv(os.path.join(PLATFORM_DIR, ".env"))
+
+
+def _required_env(name: str) -> str:
+    value = os.environ.get(name)
+    if value is None or value == "":
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
+
+MQTT_HOST = _required_env("CODEX_LOCAL_HOST")
+MQTT_PORT = int(_required_env("CODEX_MQTT_PORT"))
+MQTT_USER = _required_env("CODEX_MQTT_USER")
+MQTT_PASS = _required_env("CODEX_MQTT_PASS")
+
 def on_message(client, userdata, msg):
     try:
         payload = json.loads(msg.payload.decode())
@@ -33,8 +64,8 @@ def on_message(client, userdata, msg):
 def main():
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     client.on_message = on_message
-    client.username_pw_set('codex', 'codex-mqtt-2026')
-    client.connect('localhost', 1883)
+    client.username_pw_set(MQTT_USER, MQTT_PASS)
+    client.connect(MQTT_HOST, MQTT_PORT)
     client.subscribe('codex/syswatch/metrics')
     print('[metrics_receiver] Listening for syswatch metrics. Ctrl+C to stop.')
     try:

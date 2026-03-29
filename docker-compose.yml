@@ -16,7 +16,7 @@ services:
     container_name: codex-mosquitto
     restart: unless-stopped
     ports:
-      - "1883:1883"
+      - "${CODEX_MQTT_PORT}:1883"
     volumes:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
@@ -24,7 +24,7 @@ services:
     networks:
       - codex-net
     healthcheck:
-      test: ["CMD-SHELL", "mosquitto_pub -t test -n -h localhost -u codex -P codex-mqtt-2026 || exit 1"]
+      test: ["CMD-SHELL", "mosquitto_pub -t test -n -h localhost -u ${CODEX_MQTT_USER} -P ${CODEX_MQTT_PASS} || exit 1"]
 
   # --- Redis (hot event store) ---
   redis:
@@ -32,7 +32,7 @@ services:
     container_name: codex-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${CODEX_REDIS_PORT}:6379"
     volumes:
       - ./redis-data:/data
     command: >
@@ -45,11 +45,11 @@ services:
       --maxmemory 256mb
       --maxmemory-policy allkeys-lru
       --bind 0.0.0.0
-      --requirepass codex-redis-2026
+      --requirepass ${CODEX_REDIS_PASS}
     networks:
       - codex-net
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "codex-redis-2026", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${CODEX_REDIS_PASS}", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -60,7 +60,7 @@ services:
     container_name: codex-n8n
     restart: unless-stopped
     ports:
-      - "5678:5678"
+      - "${CODEX_N8N_PORT}:5678"
     environment:
       - N8N_DIAGNOSTICS_ENABLED=false
       - GENERIC_TIMEZONE=Europe/Paris
@@ -82,12 +82,13 @@ services:
   grafana:
     image: grafana/grafana-oss:11.4.0
     container_name: codex-grafana
+    user: "1000:1000"
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${CODEX_GRAFANA_PORT}:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=codex
+      - GF_SECURITY_ADMIN_USER=${CODEX_GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${CODEX_GRAFANA_ADMIN_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer

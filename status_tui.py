@@ -22,21 +22,49 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 
-ARCH_IP = os.environ.get("CODEX_ARCH_IP", "192.168.1.51")
-ARCH_USER = os.environ.get("CODEX_ARCH_USER", "sai")
-POPOS_IP = os.environ.get("CODEX_POPOS_IP", "192.168.1.50")
+def _load_dotenv(path: str) -> None:
+    if not os.path.isfile(path):
+        return
+    with open(path, "r", encoding="utf-8") as fh:
+        for raw in fh:
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
 
-MQTT_PORT = int(os.environ.get("CODEX_MQTT_PORT", "1883"))
-MQTT_USER = os.environ.get("CODEX_MQTT_USER", "codex")
-MQTT_PASS = os.environ.get("CODEX_MQTT_PASS", "codex-mqtt-2026")
 
-REDIS_PASS = os.environ.get("CODEX_REDIS_PASS", "codex-redis-2026")
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_load_dotenv(os.path.join(_SCRIPT_DIR, ".env"))
 
-COMPOSE_DIR = os.path.expanduser("~/codex-workspace/codex-platform")
+
+def _required_env(name: str) -> str:
+    value = os.environ.get(name)
+    if value is None or value == "":
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
+
+ARCH_IP = _required_env("CODEX_ARCH_IP")
+ARCH_USER = _required_env("CODEX_ARCH_USER")
+POPOS_IP = _required_env("CODEX_POPOS_IP")
+LOCAL_HOST = _required_env("CODEX_LOCAL_HOST")
+
+MQTT_PORT = int(_required_env("CODEX_MQTT_PORT"))
+MQTT_USER = _required_env("CODEX_MQTT_USER")
+MQTT_PASS = _required_env("CODEX_MQTT_PASS")
+
+REDIS_PASS = _required_env("CODEX_REDIS_PASS")
+
+_DEFAULT_COMPOSE_DIR = os.path.dirname(os.path.abspath(__file__))
+COMPOSE_DIR = os.path.abspath(os.environ.get("CODEX_COMPOSE_DIR", _DEFAULT_COMPOSE_DIR))
 SQLITE_DB = os.path.join(COMPOSE_DIR, "sqlite", "codex.db")
 LOG_DIR = os.path.join(COMPOSE_DIR, "logs")
 
-ARCH_LOG_DIR = f"/home/{ARCH_USER}/codex-workspace/codex-platform/logs"
+ARCH_LOG_DIR = _required_env("CODEX_ARCH_LOG_DIR")
 ARCH_SYSWATCH_LOG = f"{ARCH_LOG_DIR}/syswatch.log"
 ARCH_SENTINEL_STDOUT_LOG = f"{ARCH_LOG_DIR}/sentinel_stdout.log"
 
@@ -92,7 +120,7 @@ def _docker_container_running(name: str) -> CheckResult:
 def _mqtt_metrics_flow() -> CheckResult:
     # Grab one message and just parse JSON to ensure flow.
     cmd = (
-        f"timeout 3 mosquitto_sub -h localhost -p {MQTT_PORT} "
+        f"timeout 3 mosquitto_sub -h {shlex.quote(LOCAL_HOST)} -p {MQTT_PORT} "
         f"-u {shlex.quote(MQTT_USER)} -P {shlex.quote(MQTT_PASS)} "
         f"-t codex/syswatch/metrics -C 1"
     )

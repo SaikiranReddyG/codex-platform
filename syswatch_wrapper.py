@@ -4,7 +4,7 @@ syswatch_wrapper.py — Reads /proc metrics and publishes to MQTT every 5 second
 Runs alongside syswatch on Arch VM.
 
 Usage:
-    python3 ~/codex-workspace/codex-platform/syswatch_wrapper.py
+    python3 ${CODEX_ARCH_WORKSPACE}/codex-platform/syswatch_wrapper.py
 """
 
 import time

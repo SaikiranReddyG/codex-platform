@@ -16,12 +16,56 @@
 
 set -o pipefail
 
-COMPOSE_DIR="$HOME/codex-workspace/codex-platform"
-ARCH_IP="192.168.1.51"
-ARCH_USER="sai"
-MQTT_USER="codex"
-MQTT_PASS="codex-mqtt-2026"
-REDIS_PASS="codex-redis-2026"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMPOSE_DIR="${CODEX_COMPOSE_DIR:-$SCRIPT_DIR}"
+ENV_FILE="${CODEX_ENV_FILE:-$COMPOSE_DIR/.env}"
+if [ -f "$ENV_FILE" ]; then
+  set -a
+  . "$ENV_FILE"
+  set +a
+fi
+
+COMPOSE_DIR="${CODEX_COMPOSE_DIR:-$SCRIPT_DIR}"
+require_env() {
+  local var_name="$1"
+  if [ -z "${!var_name:-}" ]; then
+    echo "[!] Missing required environment variable: $var_name"
+    echo "    Set it in $ENV_FILE or export it before running."
+    exit 2
+  fi
+}
+
+require_env CODEX_LOCAL_HOST
+require_env CODEX_ARCH_IP
+require_env CODEX_ARCH_USER
+require_env CODEX_ARCH_WORKSPACE
+require_env CODEX_ARCH_LOG_DIR
+require_env CODEX_MQTT_PORT
+require_env CODEX_REDIS_PORT
+require_env CODEX_N8N_PORT
+require_env CODEX_GRAFANA_PORT
+require_env CODEX_MQTT_USER
+require_env CODEX_MQTT_PASS
+require_env CODEX_REDIS_PASS
+require_env CODEX_GRAFANA_ADMIN_USER
+require_env CODEX_GRAFANA_ADMIN_PASSWORD
+
+LOCAL_HOST="$CODEX_LOCAL_HOST"
+ARCH_IP="$CODEX_ARCH_IP"
+ARCH_USER="$CODEX_ARCH_USER"
+ARCH_WORKSPACE="$CODEX_ARCH_WORKSPACE"
+ARCH_LOG_DIR="$CODEX_ARCH_LOG_DIR"
+
+MQTT_PORT="$CODEX_MQTT_PORT"
+REDIS_PORT="$CODEX_REDIS_PORT"
+N8N_PORT="$CODEX_N8N_PORT"
+GRAFANA_PORT="$CODEX_GRAFANA_PORT"
+
+MQTT_USER="$CODEX_MQTT_USER"
+MQTT_PASS="$CODEX_MQTT_PASS"
+REDIS_PASS="$CODEX_REDIS_PASS"
+GRAFANA_ADMIN_USER="$CODEX_GRAFANA_ADMIN_USER"
+GRAFANA_ADMIN_PASSWORD="$CODEX_GRAFANA_ADMIN_PASSWORD"
 LOG_DIR="${COMPOSE_DIR}/logs"
 
 mkdir -p "$LOG_DIR"
@@ -32,7 +76,6 @@ SELFTEST_TRIGGER_FILE="${LOG_DIR}/codex_selftest_trigger.json"
 SENTINEL_START_ERR_FILE="${LOG_DIR}/sentinel_start_err.txt"
 
 # Arch-side logs (written on the Arch VM)
-ARCH_LOG_DIR="/home/${ARCH_USER}/codex-workspace/codex-platform/logs"
 ARCH_SYSWATCH_LOG="${ARCH_LOG_DIR}/syswatch.log"
 ARCH_SENTINEL_STDOUT_LOG="${ARCH_LOG_DIR}/sentinel_stdout.log"
 
@@ -193,7 +236,7 @@ for svc in codex-mosquitto codex-redis codex-n8n codex-grafana; do
 done
 
 info "Waiting for n8n HTTP readiness..."
-N8N_HEALTH=$(wait_http_ready "http://localhost:5678/healthz" 45)
+N8N_HEALTH=$(wait_http_ready "http://${LOCAL_HOST}:${N8N_PORT}/healthz" 45)
 if [ "$N8N_HEALTH" = "200" ]; then
   ok "n8n health endpoint ready"
 elif [ "$N8N_HEALTH" = "401" ] || [ "$N8N_HEALTH" = "403" ]; then
@@ -204,7 +247,7 @@ fi
 
 # Quick verify: MQTT accepts auth
 if command -v mosquitto_pub &>/dev/null; then
-  if mosquitto_pub -h localhost -p 1883 -u "$MQTT_USER" -P "$MQTT_PASS" -t "codex/healthcheck" -m "startup-$(date +%s)" 2>/dev/null; then
+  if mosquitto_pub -h "$LOCAL_HOST" -p "$MQTT_PORT" -u "$MQTT_USER" -P "$MQTT_PASS" -t "codex/healthcheck" -m "startup-$(date +%s)" 2>/dev/null; then
     ok "MQTT auth working"
   else
     critical_fail "MQTT auth failed — check Mosquitto config"
@@ -252,8 +295,8 @@ if ! ping -c 1 -W 3 "$ARCH_IP" &>/dev/null; then
   echo ""
   echo -e "${YELLOW}${BOLD}  ⚠ PARTIAL START — Pop!_OS ready, Arch VM offline${NC}"
   echo ""
-  echo "  Grafana:  http://localhost:3000  (admin/codex)"
-  echo "  n8n:      http://localhost:5678"
+  echo "  Grafana:  http://${LOCAL_HOST}:${GRAFANA_PORT}  (${GRAFANA_ADMIN_USER}/${GRAFANA_ADMIN_PASSWORD})"
+  echo "  n8n:      http://${LOCAL_HOST}:${N8N_PORT}"
   echo ""
   exit 1
 fi
@@ -291,7 +334,7 @@ header "Starting Arch VM services"
 
 # Netlab namespaces
 info "Setting up netlab namespaces..."
-run_cmd "arch netlab setup" "ssh \"$ARCH_USER@$ARCH_IP\" \"bash -c 'cd ~/codex-workspace/netlab && sudo -n ./lab/setup.sh'\""
+run_cmd "arch netlab setup" "ssh \"$ARCH_USER@$ARCH_IP\" \"bash -c 'cd $ARCH_WORKSPACE/netlab && sudo -n ./lab/setup.sh'\""
 NS_COUNT=$(ssh "$ARCH_USER@$ARCH_IP" "sudo -n ip netns list 2>/dev/null | wc -l" 2>/dev/null)
 if [ "$NS_COUNT" -gt 0 ] 2>/dev/null; then
   ok "Netlab namespaces ready ($NS_COUNT)"
@@ -302,7 +345,7 @@ fi
 # Syswatch wrapper
 info "Starting syswatch_wrapper..."
 log_line "Arch syswatch log: $ARCH_SYSWATCH_LOG"
-SW_PID=$(ssh "$ARCH_USER@$ARCH_IP" "bash -c 'mkdir -p \"$ARCH_LOG_DIR\"; pkill -f syswatch_wrapper 2>/dev/null; nohup python3 -u ~/codex-workspace/codex-platform/syswatch_wrapper.py > \"$ARCH_SYSWATCH_LOG\" 2>&1 & echo \$!'")
+SW_PID=$(ssh "$ARCH_USER@$ARCH_IP" "bash -c 'mkdir -p \"$ARCH_LOG_DIR\"; pkill -f syswatch_wrapper 2>/dev/null; nohup python3 -u $ARCH_WORKSPACE/codex-platform/syswatch_wrapper.py > \"$ARCH_SYSWATCH_LOG\" 2>&1 & echo \$!'")
 sleep 2
 if [ -n "$SW_PID" ] && ssh "$ARCH_USER@$ARCH_IP" "kill -0 $SW_PID 2>/dev/null" 2>/dev/null; then
   ok "syswatch_wrapper running (PID $SW_PID)"
@@ -325,7 +368,7 @@ if [ -n "$OLD_SENT_PIDS" ]; then
 fi
 
 log_line "Arch sentinel stdout log: $SENT_LOG"
-SENT_PID=$(ssh "$ARCH_USER@$ARCH_IP" "cd ~/codex-workspace/sentinel && mkdir -p \"$ARCH_LOG_DIR\" && rm -f \"$SENT_LOG\"; nohup sudo -n python3 -u src/main.py -c config.yaml -i $ARCH_SENT_IFACE --no-dashboard > \"$SENT_LOG\" 2>&1 < /dev/null & echo \$!" 2>"$SENTINEL_START_ERR_FILE" | tr -d '[:space:]')
+SENT_PID=$(ssh "$ARCH_USER@$ARCH_IP" "cd $ARCH_WORKSPACE/sentinel && mkdir -p \"$ARCH_LOG_DIR\" && rm -f \"$SENT_LOG\"; nohup sudo -n python3 -u src/main.py -c config.yaml -i $ARCH_SENT_IFACE --no-dashboard > \"$SENT_LOG\" 2>&1 < /dev/null & echo \$!" 2>"$SENTINEL_START_ERR_FILE" | tr -d '[:space:]')
 sleep 3
 SENT_CMD=$(ssh "$ARCH_USER@$ARCH_IP" "ps -eo pid,args | grep -E 'python3 .*(sentinel/src/main.py|src/main.py)' | grep -v -E 'grep|pgrep' | head -n 1" 2>/dev/null || true)
 if [ -n "$SENT_CMD" ]; then
@@ -379,7 +422,7 @@ else
 fi
 
 # Verify runtime workflow state in n8n API (not just local JSON file).
-N8N_WF_API_STATUS=$(curl -s -o "$N8N_WF_API_FILE" -w "%{http_code}" http://localhost:5678/api/v1/workflows 2>/dev/null || echo 000)
+N8N_WF_API_STATUS=$(curl -s -o "$N8N_WF_API_FILE" -w "%{http_code}" "http://${LOCAL_HOST}:${N8N_PORT}/api/v1/workflows" 2>/dev/null || echo 000)
 
 if [ "$N8N_WF_API_STATUS" = "200" ]; then
   ALERT_TRIAGE_ACTIVE=$(get_workflow_active_flag "$N8N_WF_API_FILE" "alert triage workflow")
@@ -436,7 +479,7 @@ fi
 if [ "$SELF_TEST" -eq 1 ]; then
   header "Self-test: Trigger and validate alerts"
   BEFORE_ALERT_COUNT=$(docker exec -e REDISCLI_AUTH="$REDIS_PASS" codex-redis redis-cli XLEN "stream:codex/sentinel/alerts" 2>/dev/null | tr -d '\r')
-  if ! curl -sS http://localhost:5678/webhook/red-team >"$SELFTEST_TRIGGER_FILE" 2>/dev/null; then
+  if ! curl -sS "http://${LOCAL_HOST}:${N8N_PORT}/webhook/red-team" >"$SELFTEST_TRIGGER_FILE" 2>/dev/null; then
     critical_fail "Self-test trigger failed (n8n webhook unreachable)"
   else
     ok "Self-test trigger submitted"
@@ -467,14 +510,14 @@ else
   echo -e "${BOLD}${RED}═══════════════════════════════════════════════════${NC}"
 fi
 echo ""
-echo -e "  ${BOLD}Dashboard:${NC}  http://localhost:3000  (admin / codex)"
-echo -e "  ${BOLD}n8n:${NC}        http://localhost:5678"
-echo -e "  ${BOLD}Red team:${NC}   curl http://localhost:5678/webhook/red-team"
+echo -e "  ${BOLD}Dashboard:${NC}  http://${LOCAL_HOST}:${GRAFANA_PORT}  (${GRAFANA_ADMIN_USER} / ${GRAFANA_ADMIN_PASSWORD})"
+echo -e "  ${BOLD}n8n:${NC}        http://${LOCAL_HOST}:${N8N_PORT}"
+echo -e "  ${BOLD}Red team:${NC}   curl http://${LOCAL_HOST}:${N8N_PORT}/webhook/red-team"
 echo ""
 echo -e "  ${BOLD}To trigger the demo:${NC}"
 echo -e "  1. Open Grafana SOC Command Center dashboard"
 echo -e "  2. Open Discord #ai-lab channel"
-echo -e "  3. Run: ${CYAN}curl http://localhost:5678/webhook/red-team${NC}"
+echo -e "  3. Run: ${CYAN}curl http://${LOCAL_HOST}:${N8N_PORT}/webhook/red-team${NC}"
 echo -e "  4. Watch alerts flow: sentinel → MQTT → n8n → Discord + Grafana"
 echo ""
 echo -e "  ${BOLD}To stop everything:${NC}"

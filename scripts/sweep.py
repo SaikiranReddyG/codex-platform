@@ -10,6 +10,36 @@ PLATFORM_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(PLATFORM_DIR, "sqlite", "codex.db")
 INTERVAL = 30  # seconds
 
+
+def _load_dotenv(path: str) -> None:
+    if not os.path.isfile(path):
+        return
+    with open(path, "r", encoding="utf-8") as fh:
+        for raw in fh:
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+_load_dotenv(os.path.join(PLATFORM_DIR, ".env"))
+
+
+def _required_env(name: str) -> str:
+    value = os.environ.get(name)
+    if value is None or value == '':
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
+
+REDIS_HOST = _required_env('CODEX_LOCAL_HOST')
+REDIS_PORT = int(_required_env('CODEX_REDIS_PORT'))
+REDIS_PASS = _required_env('CODEX_REDIS_PASS')
+
 STREAMS = [
     ('stream:codex/sentinel/alerts', 'codex/sentinel/alerts', 'sentinel'),
     ('stream:codex/netlab/alerts',   'codex/netlab/alerts',   'netlab'),
@@ -17,7 +47,7 @@ STREAMS = [
 ]
 
 def get_redis():
-    return redis.Redis(host='localhost', port=6379, password='codex-redis-2026', decode_responses=True)
+    return redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASS, decode_responses=True)
 
 def sweep(r, conn):
     cursor = conn.cursor()

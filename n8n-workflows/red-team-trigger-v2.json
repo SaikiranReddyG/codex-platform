@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "command": "={{ 'cd /home/sai/codex-workspace/netlab && sudo /usr/bin/python3 /home/sai/codex-workspace/netlab/run_attack.py ' + ($json.query?.attack || 'syn_flood') }}"
+        "command": "={{ 'cd ${CODEX_ARCH_WORKSPACE}/netlab && sudo /usr/bin/python3 ${CODEX_ARCH_WORKSPACE}/netlab/run_attack.py ' + ($json.query?.attack || 'syn_flood') }}"
       },
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,

@@ -7,11 +7,35 @@
 
 set -o pipefail
 
-COMPOSE_DIR="$HOME/codex-workspace/codex-platform"
-ARCH_IP="192.168.1.51"
-ARCH_USER="sai"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMPOSE_DIR="${CODEX_COMPOSE_DIR:-$SCRIPT_DIR}"
+ENV_FILE="${CODEX_ENV_FILE:-$COMPOSE_DIR/.env}"
+if [ -f "$ENV_FILE" ]; then
+  set -a
+  . "$ENV_FILE"
+  set +a
+fi
+
+COMPOSE_DIR="${CODEX_COMPOSE_DIR:-$SCRIPT_DIR}"
+require_env() {
+  local var_name="$1"
+  if [ -z "${!var_name:-}" ]; then
+    echo "[!] Missing required environment variable: $var_name"
+    echo "    Set it in $ENV_FILE or export it before running."
+    exit 2
+  fi
+}
+
+require_env CODEX_ARCH_IP
+require_env CODEX_ARCH_USER
+require_env CODEX_ARCH_WORKSPACE
+require_env CODEX_ARCH_LOG_DIR
+
+ARCH_IP="$CODEX_ARCH_IP"
+ARCH_USER="$CODEX_ARCH_USER"
+ARCH_WORKSPACE="$CODEX_ARCH_WORKSPACE"
 LOG_DIR="${COMPOSE_DIR}/logs"
-ARCH_LOG_DIR="/home/${ARCH_USER}/codex-workspace/codex-platform/logs"
+ARCH_LOG_DIR="$CODEX_ARCH_LOG_DIR"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
