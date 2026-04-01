@@ -22,6 +22,22 @@ The target demo flow is: trigger an attack, detect it, enrich it, route response
 
 Full design details and rationale are in `ARCHITECTURE.md`.
 
+## Prerequisites
+
+- Linux host with Docker Engine and Docker Compose plugin
+- Python 3.10+ for local helper scripts
+- `sqlite3` CLI available on host
+- Network access between control-plane host and sensor host
+
+Install quick check:
+
+```bash
+docker --version
+docker compose version
+python3 --version
+sqlite3 --version
+```
+
 ## Repository Layout
 
 ```text
@@ -120,6 +136,36 @@ python3 scripts/sweep.py
 - n8n: `http://localhost:5678`
 - Grafana: `http://localhost:3000` (default configured user/password in compose)
 
+## Troubleshooting
+
+### Docker services fail to start
+
+```bash
+docker compose ps
+docker compose logs --tail=100 mosquitto redis n8n grafana
+```
+
+If a service is unhealthy, check port conflicts and credentials in `.env`.
+
+### MQTT auth/healthcheck failures
+
+- Verify `CODEX_MQTT_USER` and `CODEX_MQTT_PASS` in `.env`
+- Confirm `mosquitto/config/passwd` exists and matches configured credentials
+
+### Redis auth failures
+
+- Verify `CODEX_REDIS_PASS` in `.env`
+- Confirm the same value is used by scripts and container health checks
+
+### SQLite path issues
+
+- Ensure `CODEX_SQLITE_DB` points to a writable path
+- Recreate schema if needed:
+
+```bash
+sqlite3 sqlite/codex.db < sqlite/schema.sql
+```
+
 ## Imported Assets
 
 - Grafana dashboard export: `grafana-dashboards/codex sec op-1774088358825.json`
@@ -160,6 +206,16 @@ Conventions:
 - Redis is used as hot storage; SQLite is used as cold storage.
 - n8n workflows should handle routing and sequencing, while enrichment logic stays in code (for example in sentinel).
 - Architecture choices, tradeoffs, and phase gates are documented in `ARCHITECTURE.md`.
+
+## Security Notes
+
+- Never commit a real `.env`; use `.env.example` as template only.
+- Rotate all credentials before any public deployment.
+- Keep runtime state directories (`grafana-data/`, `n8n-data/`, `redis-data/`, `logs/`) out of version control.
+
+## License
+
+License file is not finalized yet. Add `LICENSE` before public publishing.
 
 ## Roadmap (Phased)
 
