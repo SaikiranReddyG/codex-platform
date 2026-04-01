@@ -377,7 +377,7 @@ if timeout 5 ssh -o BatchMode=yes -o ConnectTimeout=3 "$ARCH_USER@$ARCH_IP" "ech
   info "Checking Arch VM processes..."
 
   # Check sentinel
-  SENTINEL_PID=$(ssh -o ConnectTimeout=3 "$ARCH_USER@$ARCH_IP" "pgrep -f 'python3.*main.py.*sentinel'" 2>/dev/null)
+  SENTINEL_PID=$(ssh -o ConnectTimeout=3 "$ARCH_USER@$ARCH_IP" "ps -eo pid,args | awk '/python3/ && /sentinel\/src\/main.py/ && !/awk/ {print \$1; exit}'" 2>/dev/null)
   if [ -n "$SENTINEL_PID" ]; then
     pass "sentinel is running (PID $SENTINEL_PID)"
   else
@@ -386,7 +386,7 @@ if timeout 5 ssh -o BatchMode=yes -o ConnectTimeout=3 "$ARCH_USER@$ARCH_IP" "ech
   fi
 
   # Check syswatch_wrapper
-  SYSWATCH_PID=$(ssh -o ConnectTimeout=3 "$ARCH_USER@$ARCH_IP" "pgrep -f 'syswatch_wrapper'" 2>/dev/null)
+  SYSWATCH_PID=$(ssh -o ConnectTimeout=3 "$ARCH_USER@$ARCH_IP" "ps -eo pid,args | awk '/python3/ && /syswatch_wrapper.py/ && !/awk/ {print \$1; exit}'" 2>/dev/null)
   if [ -n "$SYSWATCH_PID" ]; then
     pass "syswatch_wrapper is running (PID $SYSWATCH_PID)"
   else

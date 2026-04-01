@@ -76,8 +76,12 @@ echo ""
 # Stop Arch services
 info "Stopping Arch VM services..."
 if ping -c 1 -W 2 "$ARCH_IP" &>/dev/null; then
-  # Stop only the specific long-running demo processes we start.
-  ssh "$ARCH_USER@$ARCH_IP" "sudo pkill -f 'python3 .*sentinel/src/main.py|python3 .*src/main.py -c config.yaml' 2>/dev/null; pkill -f syswatch_wrapper 2>/dev/null" 2>/dev/null
+  # Kill sentinel using more reliable pattern-matching to avoid missing the process
+  ssh "$ARCH_USER@$ARCH_IP" "
+    ps -eo pid,args | awk '/python3/ && /sentinel\/src\/main\.py/ && !/awk/ {print \$1}' | xargs -r sudo kill 2>/dev/null || true
+    ps -eo pid,args | awk '/python3/ && /syswatch_wrapper\.py/ && !/awk/ {print \$1}' | xargs -r kill 2>/dev/null || true
+    sleep 1
+  " 2>/dev/null
   ok "Arch sensors stopped (sentinel + syswatch_wrapper)"
   info "Arch logs remain at: $ARCH_LOG_DIR"
 else

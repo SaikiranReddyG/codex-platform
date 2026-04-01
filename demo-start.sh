@@ -355,9 +355,29 @@ else
   info "Arch syswatch log: $ARCH_SYSWATCH_LOG"
 fi
 
+# Sentinel — pre-flight check to ensure no stale processes interfere with bridge recreation
+info "Checking for existing sentinel processes..."
+EXISTING_SENT=$(ssh "$ARCH_USER@$ARCH_IP" "ps -eo pid,args | awk '/python3/ && /sentinel\\/src\\/main\\.py/ && !/awk/ {print \$1; exit}' 2>/dev/null" 2>/dev/null)
+if [ -n "$EXISTING_SENT" ]; then
+  warn "sentinel already running (PID $EXISTING_SENT) — killing before re-launch (prevents bridge conflicts)"
+  ssh "$ARCH_USER@$ARCH_IP" "sudo -n kill $EXISTING_SENT 2>/dev/null || true; sleep 1" 2>/dev/null
+  ok "old sentinel process removed"
+fi
+
 # Sentinel
 info "Starting sentinel on br-lab..."
-ARCH_SENT_IFACE=$(ssh "$ARCH_USER@$ARCH_IP" "ip link show br-lab >/dev/null 2>&1 && echo br-lab || echo eth0" 2>/dev/null || true)
+ARCH_SENT_IFACE=""
+if ssh "$ARCH_USER@$ARCH_IP" "ip link show br-lab >/dev/null 2>&1" 2>/dev/null; then
+  ARCH_SENT_IFACE="br-lab"
+else
+  warn "br-lab missing after setup; re-running netlab setup once"
+  run_cmd "arch netlab setup (retry)" "ssh \"$ARCH_USER@$ARCH_IP\" \"bash -c 'cd $ARCH_WORKSPACE/netlab && sudo -n ./lab/setup.sh'\""
+  if ssh "$ARCH_USER@$ARCH_IP" "ip link show br-lab >/dev/null 2>&1" 2>/dev/null; then
+    ARCH_SENT_IFACE="br-lab"
+  else
+    critical_fail "br-lab still missing; sentinel start skipped"
+  fi
+fi
 SENT_LOG="$ARCH_SENTINEL_STDOUT_LOG"
 
 # Avoid pkill -f in a single SSH command: it can match and kill the SSH shell
@@ -368,7 +388,19 @@ if [ -n "$OLD_SENT_PIDS" ]; then
 fi
 
 log_line "Arch sentinel stdout log: $SENT_LOG"
-SENT_PID=$(ssh "$ARCH_USER@$ARCH_IP" "cd $ARCH_WORKSPACE/sentinel && mkdir -p \"$ARCH_LOG_DIR\" && rm -f \"$SENT_LOG\"; nohup sudo -n python3 -u src/main.py -c config.yaml -i $ARCH_SENT_IFACE --no-dashboard > \"$SENT_LOG\" 2>&1 < /dev/null & echo \$!" 2>"$SENTINEL_START_ERR_FILE" | tr -d '[:space:]')
+if [ -n "$ARCH_SENT_IFACE" ]; then
+  # Prepare remote log directory separately, then launch sentinel. This avoids
+  # brittle command chaining and ensures redirection target exists first.
+  if ! ssh "$ARCH_USER@$ARCH_IP" "mkdir -p \"$ARCH_LOG_DIR\"" 2>"$SENTINEL_START_ERR_FILE"; then
+    critical_fail "failed to create sentinel log dir on Arch ($ARCH_LOG_DIR)"
+    if [ -s "$SENTINEL_START_ERR_FILE" ]; then
+      warn "startup stderr: $(tail -n 1 "$SENTINEL_START_ERR_FILE")"
+    fi
+  fi
+  SENT_PID=$(ssh "$ARCH_USER@$ARCH_IP" "rm -f \"$SENT_LOG\"; nohup sudo -n python3 -u \"$ARCH_WORKSPACE/sentinel/src/main.py\" -c \"$ARCH_WORKSPACE/sentinel/config.yaml\" -i $ARCH_SENT_IFACE --no-dashboard > \"$SENT_LOG\" 2>&1 < /dev/null & echo \$!" 2>"$SENTINEL_START_ERR_FILE" | awk '/^[0-9]+$/ {pid=$1} END {print pid}')
+else
+  SENT_PID=""
+fi
 sleep 3
 SENT_CMD=$(ssh "$ARCH_USER@$ARCH_IP" "ps -eo pid,args | grep -E 'python3 .*(sentinel/src/main.py|src/main.py)' | grep -v -E 'grep|pgrep' | head -n 1" 2>/dev/null || true)
 if [ -n "$SENT_CMD" ]; then

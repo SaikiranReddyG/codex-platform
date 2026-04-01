@@ -120,11 +120,11 @@ def _docker_container_running(name: str) -> CheckResult:
 def _mqtt_metrics_flow() -> CheckResult:
     # Grab one message and just parse JSON to ensure flow.
     cmd = (
-        f"timeout 3 mosquitto_sub -h {shlex.quote(LOCAL_HOST)} -p {MQTT_PORT} "
+        f"timeout 6 mosquitto_sub -h {shlex.quote(LOCAL_HOST)} -p {MQTT_PORT} "
         f"-u {shlex.quote(MQTT_USER)} -P {shlex.quote(MQTT_PASS)} "
         f"-t codex/syswatch/metrics -C 1"
     )
-    rc, out = _run(cmd, 4.0)
+    rc, out = _run(cmd, 7.0)
     if rc != 0 or not out:
         return CheckResult(
             "mqtt:syswatch_metrics",
@@ -186,7 +186,10 @@ def _arch_ssh(cmd: str, timeout_s: float = 4.0) -> tuple[int, str]:
 
 
 def _arch_proc(name: str, pattern: str) -> CheckResult:
-    rc, out = _arch_ssh(f"pgrep -fa {shlex.quote(pattern)} | head -n 1", 4.0)
+    rc, out = _arch_ssh(
+        f"ps -eo pid,args | awk -v pat={shlex.quote(pattern)} '$0 ~ pat && $0 !~ /awk/ {{print; exit}}'",
+        4.0,
+    )
     if rc == 0 and out:
         return CheckResult(f"arch:{name}", Level.OK, out.strip()[:80])
     return CheckResult(f"arch:{name}", Level.WARN, "not running")
@@ -240,8 +243,8 @@ def gather_checks() -> list[CheckResult]:
     if rc == 0:
         results.append(_arch_netns_count())
         results.append(_arch_bridge_exists())
-        results.append(_arch_proc("sentinel", "python3 .*src/main.py"))
-        results.append(_arch_proc("syswatch_wrapper", "syswatch_wrapper"))
+        results.append(_arch_proc("sentinel", "python3 .*sentinel/src/main.py"))
+        results.append(_arch_proc("syswatch_wrapper", "python3 .*syswatch_wrapper.py"))
 
     return results
 
