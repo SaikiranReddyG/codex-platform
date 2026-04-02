@@ -432,9 +432,9 @@ These are captured here so they don't get lost but don't derail current work.
 
 These must be true before starting Phase 1:
 
-- [ ] sentinel migrated to Arch and functional (from ECOSYSTEM-MAP next steps #1)
-- [ ] netlab migrated to Arch and functional (from ECOSYSTEM-MAP next steps #2)
-- [ ] Docker and Docker Compose installed on Pop!_OS
-- [ ] Static IPs configured on both machines
-- [ ] `codex-platform` repo initialized on GitHub
-- [ ] Discord server created with #alerts channel
+- [x] sentinel migrated to Arch and functional (from ECOSYSTEM-MAP next steps #1)
+- [x] netlab migrated to Arch and functional (from ECOSYSTEM-MAP next steps #2)
+- [x] Docker and Docker Compose installed on Pop!_OS
+- [x] Static IPs configured on both machines
+- [x] `codex-platform` repo initialized on GitHub
+- [x] Discord server created with #alerts channel

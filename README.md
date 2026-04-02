@@ -50,8 +50,6 @@ codex-platform/
 ├── demo-stop.sh
 ├── healthcheck.sh
 ├── docker-compose.yml
-├── soc-command-center-v2.json
-├── topology-panel-v2.html
 ├── grafana-dashboards/
 │   └── codex sec op-1774088358825.json
 ├── mosquitto/
@@ -169,8 +167,6 @@ sqlite3 sqlite/codex.db < sqlite/schema.sql
 ## Imported Assets
 
 - Grafana dashboard export: `grafana-dashboards/codex sec op-1774088358825.json`
-- Grafana dashboard (SOC v2): `soc-command-center-v2.json`
-- Grafana HTML topology panel snippet: `topology-panel-v2.html`
 - n8n alert workflow export: `n8n-workflows/alert_triage_workflow.json`
 - n8n red-team trigger workflow export: `n8n-workflows/red-team-trigger-v2.json`
 

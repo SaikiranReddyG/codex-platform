@@ -4,7 +4,8 @@ grafana-data/
 mosquitto/data/
 mosquitto/log/
 mosquitto/config/passwd
-logs/
+logs/*
+!logs/.gitkeep
 sqlite/codex.db
 .env
 *.pyc
